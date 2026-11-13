@@ -110,7 +110,7 @@ namespace NovaOS.FNF
 
             if (chartBank.noteStarts == null || chartBank.noteCounts == null ||
                 chartBank.noteTimesMs == null || chartBank.noteDirections == null ||
-                chartBank.sustainLengthsMs == null || notePool == null ||
+                chartBank.sustainLengthsMs == null || notePool == null || notePool.Length == 0 ||
                 laneReceptors == null || laneReceptors.Length < 4)
             {
                 Debug.LogError("The selected chart bank has not been populated or is missing note arrays.");
@@ -157,9 +157,15 @@ namespace NovaOS.FNF
                 if (end > lastNoteEndMs) lastNoteEndMs = end;
             }
 
+            string playerCharacter = "bf";
+            string opponentCharacter = "dad";
             if (chartBank.playerCharacterIds != null && chartIndex < chartBank.playerCharacterIds.Length &&
                 !string.IsNullOrEmpty(chartBank.playerCharacterIds[chartIndex]))
-                audioPlayer.SetVocalCharacter(chartBank.playerCharacterIds[chartIndex]);
+                playerCharacter = chartBank.playerCharacterIds[chartIndex];
+            if (chartBank.opponentCharacterIds != null && chartIndex < chartBank.opponentCharacterIds.Length &&
+                !string.IsNullOrEmpty(chartBank.opponentCharacterIds[chartIndex]))
+                opponentCharacter = chartBank.opponentCharacterIds[chartIndex];
+            audioPlayer.SetVocalCharacters(playerCharacter, opponentCharacter);
 
             audioPlayer.StopSong();
             if (beatClock != null) beatClock.StopClock();
