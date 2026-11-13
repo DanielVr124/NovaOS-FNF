@@ -169,6 +169,7 @@ namespace NovaOS.FNF
                 if (favoriteButtons != null && slotIndex < favoriteButtons.Length && favoriteButtons[slotIndex] != null)
                 {
                     favoriteButtons[slotIndex].freeplayList = this;
+                    favoriteButtons[slotIndex].saveManager = saveManager;
                     favoriteButtons[slotIndex].songId = valid ? uniqueSongIds[songIndex] : "";
                     favoriteButtons[slotIndex].Refresh();
                 }
