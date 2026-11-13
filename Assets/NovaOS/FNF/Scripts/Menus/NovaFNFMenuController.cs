@@ -167,6 +167,17 @@ namespace NovaOS.FNF
             PlayMenuTrack(resultsMusicId);
         }
 
+        public void SetStoryActions(NovaFNFMenuAction[] actions)
+        {
+            storyModeActions = actions;
+            if (currentScreenIndex == storyModeScreenIndex)
+            {
+                currentActions = storyModeActions;
+                selectedActionIndex = 0;
+                RefreshHighlights();
+            }
+        }
+
         public void SetFreeplayActions(NovaFNFMenuAction[] actions)
         {
             freeplayActions = actions;
