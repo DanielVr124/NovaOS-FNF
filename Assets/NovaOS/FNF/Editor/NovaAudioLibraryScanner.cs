@@ -13,8 +13,25 @@ namespace NovaOS.FNF.Editor
     /// Recursively scans imported audio clips, including the official FNF
     /// songs/<songId>/Inst[-variation].ogg and Voices-<character>[-variation].ogg layout.
     /// </summary>
+    [InitializeOnLoad]
     public static class NovaAudioLibraryScanner
     {
+        private const string AutoScanSessionKey = "NovaOS.FNF.AudioAutoScanned";
+
+        static NovaAudioLibraryScanner()
+        {
+            EditorApplication.delayCall += AutoScanAfterPackageImport;
+        }
+
+        private static void AutoScanAfterPackageImport()
+        {
+            if (SessionState.GetBool(AutoScanSessionKey, false)) return;
+            SessionState.SetBool(AutoScanSessionKey, true);
+            if (!AssetDatabase.IsValidFolder(AudioRoot)) return;
+            if (AssetDatabase.LoadAssetAtPath<NovaAudioCatalog>(CatalogPath) != null) return;
+            ScanAndBuild(false);
+        }
+
         private const string AudioRoot = "Assets/NovaOS/AudioLibrary";
         private const string GeneratedFolder = "Assets/NovaOS/Generated";
         private const string CatalogPath = GeneratedFolder + "/NovaAudioCatalog.asset";
