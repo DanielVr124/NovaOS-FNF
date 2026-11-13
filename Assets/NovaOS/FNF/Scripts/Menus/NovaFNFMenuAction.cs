@@ -11,7 +11,7 @@ namespace NovaOS.FNF
     public class NovaFNFMenuAction : UdonSharpBehaviour
     {
         public NovaFNFMenuController menuController;
-        [Tooltip("0 Story, 1 Freeplay, 2 Options, 3 Back, 4 Controls, 5 Audio, 6 Accessibility, 7 Start selected song, 8 Main Menu, 9 Results, 10 Title")]
+        [Tooltip("0 Story, 1 Freeplay, 2 Options, 3 Back, 4 Controls, 5 Audio, 6 Accessibility, 7 Start selected song, 8 Main Menu, 9 Results, 10 Title, 11 Start selected Story week, 12 Open difficulty select")]
         public int actionId;
         public int weekIndex;
         public string songId;
