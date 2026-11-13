@@ -37,6 +37,14 @@ namespace NovaOS.FNF
             else
                 receptor = null;
 
+            if (receptor == null)
+            {
+                activeNote = false;
+                if (noteVisual != null) noteVisual.SetActive(false);
+                if (sustainBody != null) sustainBody.gameObject.SetActive(false);
+                return;
+            }
+
             if (noteVisual != null) noteVisual.SetActive(true);
             int visualLane = laneIndex % 4;
             if (noteLabel != null)
