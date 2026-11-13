@@ -18,6 +18,7 @@ namespace NovaOS.FNF
 
         [Header("Chart selection")]
         public string selectedSongId = "tutorial";
+        public string selectedVariationId = "default";
         public string selectedDifficultyId = "normal";
         public bool downscroll;
         public float spawnLeadMs = 2200f;
@@ -63,9 +64,15 @@ namespace NovaOS.FNF
         private int nextChartNote;
         private int judgedNotes;
         private int weightedAccuracy;
-        private bool[] laneHeld = new bool[4];
         private NovaFNFNoteView[] heldSustainNotes = new NovaFNFNoteView[4];
         private float lastNoteEndMs;
+
+        public void SetSongSelection(string songId, string variationId, string difficultyId)
+        {
+            selectedSongId = songId;
+            selectedVariationId = variationId;
+            selectedDifficultyId = difficultyId;
+        }
 
         public void StartSong()
         {
@@ -75,13 +82,22 @@ namespace NovaOS.FNF
                 return;
             }
 
-            chartIndex = chartBank.FindChartIndex(selectedSongId, selectedDifficultyId);
-            if (chartIndex < 0)
-                chartIndex = chartBank.FindFirstDifficulty(selectedSongId);
-
-            if (chartIndex < 0)
+            if (chartBank.noteStarts == null || chartBank.noteCounts == null ||
+                chartBank.noteTimesMs == null || chartBank.noteDirections == null ||
+                chartBank.sustainLengthsMs == null)
             {
-                Debug.LogWarning("No chart found for " + selectedSongId + " (" + selectedDifficultyId + ").");
+                Debug.LogError("The selected chart bank has not been populated or is missing note arrays.");
+                return;
+            }
+
+            chartIndex = chartBank.FindChartIndex(selectedSongId, selectedVariationId, selectedDifficultyId);
+            if (chartIndex < 0)
+                chartIndex = chartBank.FindFirstDifficulty(selectedSongId, selectedVariationId);
+
+            if (chartIndex < 0 || chartIndex >= chartBank.noteStarts.Length ||
+                chartIndex >= chartBank.noteCounts.Length)
+            {
+                Debug.LogWarning("No chart found for " + selectedSongId + " / " + selectedVariationId + " / " + selectedDifficultyId + ".");
                 return;
             }
 
@@ -97,6 +113,11 @@ namespace NovaOS.FNF
 
             chartNoteStart = chartBank.noteStarts[chartIndex];
             chartNoteEnd = chartNoteStart + chartBank.noteCounts[chartIndex];
+            if (chartNoteStart < 0 || chartNoteEnd > chartBank.noteTimesMs.Length)
+            {
+                Debug.LogError("The chart bank contains invalid note range indices for " + selectedSongId + ".");
+                return;
+            }
             nextChartNote = chartNoteStart;
 
             for (int i = chartNoteStart; i < chartNoteEnd; i++)
@@ -188,14 +209,13 @@ namespace NovaOS.FNF
             if (audioPlayer != null) audioPlayer.StopSong();
             playing = false;
             paused = false;
+            ClearNotes();
             if (pausePanel != null) pausePanel.SetActive(false);
             if (menuController != null) menuController.OpenFreeplay();
         }
 
         private void SpawnUpcomingNotes(float songTimeMs)
         {
-            if (chartBank.noteTimesMs == null) return;
-
             while (nextChartNote < chartNoteEnd &&
                    chartBank.noteTimesMs[nextChartNote] <= songTimeMs + spawnLeadMs)
             {
@@ -211,6 +231,10 @@ namespace NovaOS.FNF
                             chartBank.sustainLengthsMs[nextChartNote],
                             direction >= 4,
                             laneReceptors);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Note pool exhausted. Increase the prewarmed notePool size.");
                     }
                 }
                 nextChartNote++;
@@ -315,7 +339,6 @@ namespace NovaOS.FNF
             misses++;
             judgedNotes++;
             combo = 0;
-            weightedAccuracy += 0;
             health -= missHealthLoss;
             ClampHealth();
             RefreshUI();
@@ -381,6 +404,7 @@ namespace NovaOS.FNF
             playing = false;
             paused = false;
             if (audioPlayer != null) audioPlayer.StopSong();
+            ClearNotes();
             if (pausePanel != null) pausePanel.SetActive(false);
             if (menuController != null) menuController.OpenResults();
         }
