@@ -90,10 +90,11 @@ namespace NovaOS.FNF.Editor
 
             EditorUtility.SetDirty(bank);
             PrefabUtility.RecordPrefabInstancePropertyModifications(bank);
-            Debug.Log("Populated VRChat audio bank: " + songIds.Count + " songs, " + menuIds.Count + " menu tracks, " + sfxIds.Count + " character vocal tracks, " + menuIds.Count + " menu tracks, " + sfxIds.Count + " sound effects.", bank);
+            Debug.Log("Populated VRChat audio bank: " + songIds.Count + " songs, " + voiceClips.Count + " character vocal tracks, " + menuIds.Count + " menu tracks, " + sfxIds.Count + " sound effects.", bank);
             EditorUtility.DisplayDialog(
                 "NovaOS Audio Library",
                 "VRChat audio bank populated.\n\nSongs: " + songIds.Count +
+                "\nCharacter vocal tracks: " + voiceClips.Count +
                 "\nMenu tracks: " + menuIds.Count +
                 "\nSound effects: " + sfxIds.Count,
                 "Done");
