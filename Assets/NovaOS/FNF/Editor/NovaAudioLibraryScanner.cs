@@ -156,8 +156,11 @@ namespace NovaOS.FNF.Editor
             AssetDatabase.Refresh();
 
             int distinctSongs = songMap.Values.Select(s => s.id).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+            int erectInstrumentals = songs.Count(s => s.variationId == "erect" && s.instrumental != null);
+            int erectSongs = songs.Count(s => s.variationId == "erect");
             string report = "Songs indexed: " + distinctSongs +
                 "\nSong variations indexed: " + songs.Count +
+                "\nErect remix instrumentals: " + erectInstrumentals + " / " + erectSongs +
                 "\nCharacter vocal tracks: " + voices.Count +
                 "\nMenu tracks: " + menu.Count +
                 "\nSound effects: " + effects.Count +
