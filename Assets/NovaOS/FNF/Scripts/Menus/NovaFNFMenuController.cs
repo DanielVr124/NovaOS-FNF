@@ -59,6 +59,7 @@ namespace NovaOS.FNF
         public NovaFNFGameplayController gameplayController;
         public NovaFNFInputBindings inputBindings;
         public NovaFNFDifficultyListController difficultyList;
+        public NovaFNFFreeplayListController freeplayList;
         public NovaFNFStoryProgression storyProgression;
         public int selectedWeekIndex;
         public string selectedSongId = "";
@@ -137,6 +138,9 @@ namespace NovaOS.FNF
 
         public void OpenFreeplay()
         {
+            // Rebuild on entry so charts imported after the scene first loaded
+            // are reflected without requiring a Unity restart.
+            if (freeplayList != null) freeplayList.BuildSongList();
             ShowScreen(freeplayScreenIndex, true);
             PlayMenuTrack(freeplayMusicId);
             PlayCurrentFreeplayPreview();
