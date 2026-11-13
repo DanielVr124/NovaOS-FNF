@@ -16,6 +16,14 @@ namespace NovaOS.FNF
         }
 
         [Serializable]
+        public sealed class VoiceAudio
+        {
+            public string songId;
+            public string characterId;
+            public AudioClip clip;
+        }
+
+        [Serializable]
         public sealed class NamedAudio
         {
             public string id;
@@ -23,10 +31,12 @@ namespace NovaOS.FNF
         }
 
         [SerializeField] private List<SongAudio> songs = new List<SongAudio>();
+        [SerializeField] private List<VoiceAudio> voiceTracks = new List<VoiceAudio>();
         [SerializeField] private List<NamedAudio> menuMusic = new List<NamedAudio>();
         [SerializeField] private List<NamedAudio> soundEffects = new List<NamedAudio>();
 
         public IReadOnlyList<SongAudio> Songs => songs;
+        public IReadOnlyList<VoiceAudio> VoiceTracks => voiceTracks;
         public IReadOnlyList<NamedAudio> MenuMusic => menuMusic;
         public IReadOnlyList<NamedAudio> SoundEffects => soundEffects;
 
@@ -79,9 +89,10 @@ namespace NovaOS.FNF
         }
 
 #if UNITY_EDITOR
-        public void EditorReplaceData(List<SongAudio> newSongs, List<NamedAudio> newMenuMusic, List<NamedAudio> newSoundEffects)
+        public void EditorReplaceData(List<SongAudio> newSongs, List<VoiceAudio> newVoiceTracks, List<NamedAudio> newMenuMusic, List<NamedAudio> newSoundEffects)
         {
             songs = newSongs ?? new List<SongAudio>();
+            voiceTracks = newVoiceTracks ?? new List<VoiceAudio>();
             menuMusic = newMenuMusic ?? new List<NamedAudio>();
             soundEffects = newSoundEffects ?? new List<NamedAudio>();
         }
