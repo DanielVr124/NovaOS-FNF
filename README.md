@@ -186,3 +186,8 @@ The Editor validator reports missing components, unset references and array mism
 - The repository contains source code, not official FNF music/art. Only import and redistribute assets you have permission to use. Official game code and official game assets have separate licenses.
 - VRChat cannot freely scan arbitrary folders on a player's PC at runtime. Imported audio and art must be part of the Unity project and world build.
 - This project aims to recreate the play experience, but it is not an official FNF product and has no official affiliation.
+
+
+## Official asset repository import
+
+The project now includes an Editor importer for the official `FunkinCrew/funkin.assets` repository. It fetches the source into Unity's local `Library` cache and imports audio, charts, level data, images, character/stage data and fonts into local project folders. See [OFFICIAL_ASSET_IMPORT.md](OFFICIAL_ASSET_IMPORT.md) for prerequisites, exact destinations and the post-import catalog steps. Imported proprietary content is excluded from Git; it is not uploaded by the importer. This workflow does not yet automatically convert every official atlas/animation into scene-ready Unity objects.
