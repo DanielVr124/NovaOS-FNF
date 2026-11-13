@@ -34,6 +34,13 @@ namespace NovaOS.FNF
 
         [Header("Audio")]
         public AudioSource uiAudioSource;
+        public NovaFNFUdonAudioPlayer menuAudioPlayer;
+        public string titleMusicId;
+        public string mainMenuMusicId;
+        public string storyModeMusicId;
+        public string freeplayMusicId;
+        public string optionsMusicId;
+        public string resultsMusicId;
         public AudioClip moveSound;
         public AudioClip confirmSound;
         public AudioClip cancelSound;
@@ -55,6 +62,7 @@ namespace NovaOS.FNF
         private void Start()
         {
             ShowScreen(titleScreenIndex, false);
+            PlayMenuTrack(titleMusicId);
         }
 
         private void Update()
@@ -86,47 +94,55 @@ namespace NovaOS.FNF
         public void OpenTitle()
         {
             ShowScreen(titleScreenIndex, true);
+            PlayMenuTrack(titleMusicId);
         }
 
         public void OpenMainMenu()
         {
             ShowScreen(mainMenuScreenIndex, true);
+            PlayMenuTrack(mainMenuMusicId);
             PlayUiSound(confirmSound);
         }
 
         public void OpenStoryMode()
         {
             ShowScreen(storyModeScreenIndex, true);
+            PlayMenuTrack(storyModeMusicId);
             PlayUiSound(confirmSound);
         }
 
         public void OpenFreeplay()
         {
             ShowScreen(freeplayScreenIndex, true);
+            PlayMenuTrack(freeplayMusicId);
             PlayUiSound(confirmSound);
         }
 
         public void OpenOptions()
         {
             ShowScreen(optionsScreenIndex, true);
+            PlayMenuTrack(optionsMusicId);
             PlayUiSound(confirmSound);
         }
 
         public void OpenControls()
         {
             ShowScreen(controlsScreenIndex, true);
+            PlayMenuTrack(optionsMusicId);
             PlayUiSound(confirmSound);
         }
 
         public void OpenAudioOptions()
         {
             ShowScreen(audioOptionsScreenIndex, true);
+            PlayMenuTrack(optionsMusicId);
             PlayUiSound(confirmSound);
         }
 
         public void OpenAccessibilityOptions()
         {
             ShowScreen(accessibilityScreenIndex, true);
+            PlayMenuTrack(optionsMusicId);
             PlayUiSound(confirmSound);
         }
 
@@ -140,6 +156,7 @@ namespace NovaOS.FNF
 
             gameplayController.SetSongSelection(selectedSongId, selectedVariationId, selectedDifficultyId);
             ShowScreen(gameplayScreenIndex, true);
+            if (menuAudioPlayer != null) menuAudioPlayer.StopMenuMusic();
             gameplayController.StartSong();
             PlayUiSound(confirmSound);
         }
@@ -147,6 +164,7 @@ namespace NovaOS.FNF
         public void OpenResults()
         {
             ShowScreen(resultsScreenIndex, true);
+            PlayMenuTrack(resultsMusicId);
         }
 
         public void SetFreeplayActions(NovaFNFMenuAction[] actions)
@@ -188,11 +206,13 @@ namespace NovaOS.FNF
                 historyCount--;
                 int previous = screenHistory[historyCount];
                 ShowScreen(previous, false);
+                PlayScreenMusic(previous);
                 PlayUiSound(cancelSound);
             }
             else if (currentScreenIndex != mainMenuScreenIndex)
             {
                 ShowScreen(mainMenuScreenIndex, false);
+                PlayMenuTrack(mainMenuMusicId);
                 PlayUiSound(cancelSound);
             }
         }
@@ -280,6 +300,24 @@ namespace NovaOS.FNF
             for (int i = 0; i < currentActions.Length; i++)
                 if (currentActions[i] != null)
                     currentActions[i].SetHighlighted(i == selectedActionIndex);
+        }
+
+        private void PlayScreenMusic(int screenIndex)
+        {
+            if (screenIndex == titleScreenIndex) PlayMenuTrack(titleMusicId);
+            else if (screenIndex == mainMenuScreenIndex) PlayMenuTrack(mainMenuMusicId);
+            else if (screenIndex == storyModeScreenIndex) PlayMenuTrack(storyModeMusicId);
+            else if (screenIndex == freeplayScreenIndex) PlayMenuTrack(freeplayMusicId);
+            else if (screenIndex == optionsScreenIndex || screenIndex == controlsScreenIndex ||
+                     screenIndex == audioOptionsScreenIndex || screenIndex == accessibilityScreenIndex)
+                PlayMenuTrack(optionsMusicId);
+            else if (screenIndex == resultsScreenIndex) PlayMenuTrack(resultsMusicId);
+        }
+
+        private void PlayMenuTrack(string trackId)
+        {
+            if (menuAudioPlayer != null && !string.IsNullOrEmpty(trackId))
+                menuAudioPlayer.PlayMenuMusic(trackId);
         }
 
         private void PlayUiSound(AudioClip clip)
