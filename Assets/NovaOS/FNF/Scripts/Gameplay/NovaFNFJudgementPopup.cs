@@ -15,6 +15,12 @@ namespace NovaOS.FNF
         public Animator animator;
         public string showTrigger = "Show";
         public float visibleSeconds = 0.55f;
+        public AudioSource audioSource;
+        public AudioClip sickSound;
+        public AudioClip goodSound;
+        public AudioClip badSound;
+        public AudioClip shitSound;
+        public AudioClip missSound;
 
         private float hideAtTime;
 
@@ -23,18 +29,25 @@ namespace NovaOS.FNF
             if (root != null) root.SetActive(false);
         }
 
-        public void ShowSick() { Show("Sick!"); }
-        public void ShowGood() { Show("Good"); }
-        public void ShowBad() { Show("Bad"); }
-        public void ShowShit() { Show("Shit"); }
-        public void ShowMiss() { Show("Miss"); }
+        public void ShowSick() { Show("Sick!", sickSound); }
+        public void ShowGood() { Show("Good", goodSound); }
+        public void ShowBad() { Show("Bad", badSound); }
+        public void ShowShit() { Show("Shit", shitSound); }
+        public void ShowMiss() { Show("Miss", missSound); }
 
         public void Show(string label)
+        {
+            Show(label, null);
+        }
+
+        public void Show(string label, AudioClip sound)
         {
             if (root != null) root.SetActive(true);
             if (judgementText != null) judgementText.text = label;
             if (animator != null && !string.IsNullOrEmpty(showTrigger))
                 animator.SetTrigger(showTrigger);
+            if (audioSource != null && sound != null)
+                audioSource.PlayOneShot(sound);
             hideAtTime = Time.time + Mathf.Max(0.05f, visibleSeconds);
         }
 
