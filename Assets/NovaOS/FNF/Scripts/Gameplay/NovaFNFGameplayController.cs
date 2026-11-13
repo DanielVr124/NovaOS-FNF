@@ -48,6 +48,16 @@ namespace NovaOS.FNF
         public float hitHealthGain = 0.025f;
         public float missHealthLoss = 0.10f;
 
+        [Header("Countdown")]
+        public bool enableCountdown = true;
+        [Range(1, 8)] public int countdownBeats = 4;
+        public Text countdownText;
+        public Animator countdownAnimator;
+        public string countdownBeatTrigger = "Beat";
+        public AudioSource countdownAudioSource;
+        public AudioClip[] countdownClips;
+        public string[] countdownLabels;
+
         [Header("UI")]
         public Text scoreText;
         public Text comboText;
@@ -65,6 +75,7 @@ namespace NovaOS.FNF
         public float accuracy;
         public bool playing;
         public bool paused;
+        public bool countdownActive;
 
         private int chartIndex = -1;
         private int chartNoteStart;
@@ -76,6 +87,9 @@ namespace NovaOS.FNF
         private bool[] externalLaneHeld = new bool[4];
         private float lastNoteEndMs;
         private bool failed;
+        private float countdownStartTime;
+        private float countdownBeatSeconds;
+        private int countdownStage = -1;
 
         public void SetSongSelection(string songId, string variationId, string difficultyId)
         {
@@ -94,7 +108,8 @@ namespace NovaOS.FNF
 
             if (chartBank.noteStarts == null || chartBank.noteCounts == null ||
                 chartBank.noteTimesMs == null || chartBank.noteDirections == null ||
-                chartBank.sustainLengthsMs == null)
+                chartBank.sustainLengthsMs == null || notePool == null ||
+                laneReceptors == null || laneReceptors.Length < 4)
             {
                 Debug.LogError("The selected chart bank has not been populated or is missing note arrays.");
                 return;
@@ -125,7 +140,9 @@ namespace NovaOS.FNF
 
             chartNoteStart = chartBank.noteStarts[chartIndex];
             chartNoteEnd = chartNoteStart + chartBank.noteCounts[chartIndex];
-            if (chartNoteStart < 0 || chartNoteEnd > chartBank.noteTimesMs.Length)
+            if (chartNoteStart < 0 || chartNoteEnd > chartBank.noteTimesMs.Length ||
+                chartNoteEnd > chartBank.noteDirections.Length ||
+                chartNoteEnd > chartBank.sustainLengthsMs.Length)
             {
                 Debug.LogError("The chart bank contains invalid note range indices for " + selectedSongId + ".");
                 return;
@@ -142,16 +159,41 @@ namespace NovaOS.FNF
                 !string.IsNullOrEmpty(chartBank.playerCharacterIds[chartIndex]))
                 audioPlayer.SetVocalCharacter(chartBank.playerCharacterIds[chartIndex]);
 
-            playing = audioPlayer.PlaySong(selectedSongId);
+            audioPlayer.StopSong();
+            if (beatClock != null) beatClock.StopClock();
+            playing = false;
             paused = false;
-            if (!playing) return;
-            if (beatClock != null) beatClock.StartClock(chartIndex);
             if (pausePanel != null) pausePanel.SetActive(false);
             RefreshUI();
+
+            if (enableCountdown)
+            {
+                float bpm = 100f;
+                if (chartBank.baseBpms != null && chartIndex < chartBank.baseBpms.Length && chartBank.baseBpms[chartIndex] > 0f)
+                    bpm = chartBank.baseBpms[chartIndex];
+
+                countdownBeatSeconds = 60f / bpm;
+                countdownStartTime = Time.time;
+                countdownStage = -1;
+                countdownActive = true;
+                if (countdownText != null) countdownText.text = "";
+            }
+            else
+            {
+                BeginSongNow();
+            }
         }
 
         private void Update()
         {
+            if (countdownActive)
+            {
+                UpdateCountdown();
+                if (Input.GetKeyDown(KeyCode.Escape))
+                    CancelCountdown();
+                return;
+            }
+
             if (!playing || paused) return;
 
             if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) HitLane(0);
@@ -172,6 +214,57 @@ namespace NovaOS.FNF
                 FinishSong();
         }
 
+        private void UpdateCountdown()
+        {
+            float elapsed = Time.time - countdownStartTime;
+            int stage = Mathf.FloorToInt(elapsed / Mathf.Max(0.01f, countdownBeatSeconds));
+            if (stage != countdownStage && stage < countdownBeats)
+            {
+                countdownStage = stage;
+                if (countdownLabels != null && stage >= 0 && stage < countdownLabels.Length && countdownText != null)
+                    countdownText.text = countdownLabels[stage];
+                else if (countdownText != null)
+                    countdownText.text = "";
+
+                if (countdownAnimator != null && !string.IsNullOrEmpty(countdownBeatTrigger))
+                    countdownAnimator.SetTrigger(countdownBeatTrigger);
+
+                if (countdownAudioSource != null && countdownClips != null &&
+                    stage >= 0 && stage < countdownClips.Length && countdownClips[stage] != null)
+                    countdownAudioSource.PlayOneShot(countdownClips[stage]);
+            }
+
+            if (elapsed >= countdownBeatSeconds * countdownBeats)
+                BeginSongNow();
+        }
+
+        private void BeginSongNow()
+        {
+            countdownActive = false;
+            if (countdownText != null) countdownText.text = "";
+
+            playing = audioPlayer != null && audioPlayer.PlaySong(selectedSongId);
+            paused = false;
+            if (!playing)
+            {
+                Debug.LogWarning("Unable to start song audio for " + selectedSongId + ".");
+                if (menuController != null) menuController.OpenFreeplay();
+                return;
+            }
+
+            if (beatClock != null) beatClock.StartClock(chartIndex);
+            if (pausePanel != null) pausePanel.SetActive(false);
+        }
+
+        public void CancelCountdown()
+        {
+            if (!countdownActive) return;
+            countdownActive = false;
+            if (countdownText != null) countdownText.text = "";
+            if (countdownAudioSource != null) countdownAudioSource.Stop();
+            if (menuController != null) menuController.OpenFreeplay();
+        }
+
         public void SetExternalLaneHeld(int lane, bool held)
         {
             if (lane < 0 || lane > 3) return;
@@ -180,7 +273,7 @@ namespace NovaOS.FNF
 
         public void HitLane(int lane)
         {
-            if (!playing || paused || lane < 0 || lane > 3) return;
+            if (!playing || paused || countdownActive || lane < 0 || lane > 3) return;
 
             float songTimeMs = audioPlayer.GetSongPositionSeconds() * 1000f + inputOffsetMs;
             NovaFNFNoteView bestNote = null;
@@ -211,7 +304,7 @@ namespace NovaOS.FNF
 
         public void PauseGame()
         {
-            if (!playing || paused) return;
+            if (!playing || paused || countdownActive) return;
             paused = true;
             audioPlayer.PauseSong();
             if (pausePanel != null) pausePanel.SetActive(true);
@@ -227,6 +320,7 @@ namespace NovaOS.FNF
 
         public void RestartSong()
         {
+            countdownActive = false;
             if (audioPlayer != null) audioPlayer.StopSong();
             if (beatClock != null) beatClock.StopClock();
             StartSong();
@@ -234,6 +328,7 @@ namespace NovaOS.FNF
 
         public void ExitToMenu()
         {
+            countdownActive = false;
             if (audioPlayer != null) audioPlayer.StopSong();
             if (beatClock != null) beatClock.StopClock();
             playing = false;
