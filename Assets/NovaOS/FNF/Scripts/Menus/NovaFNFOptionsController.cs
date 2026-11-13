@@ -197,6 +197,7 @@ namespace NovaOS.FNF
             if (audioPlayer == null) return;
             audioPlayer.instrumentalVolume = instrumentalVolume;
             audioPlayer.vocalsVolume = vocalsVolume;
+            audioPlayer.opponentVocalsVolume = vocalsVolume;
             audioPlayer.menuMusicVolume = menuMusicVolume;
             audioPlayer.soundEffectVolume = soundEffectVolume;
         }
