@@ -63,11 +63,19 @@ namespace NovaOS.FNF.Editor
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            EditorUtility.DisplayDialog("NovaOS FNF Setup",
-                "Created:\n" + PrefabPath + "\n\n" + ScenePath +
-                "\n\nOpen the test scene. The layout and systems are preassembled; assign/imported content and UdonSharp compilation still need validation.",
-                "Open Test Scene");
-            EditorSceneManager.OpenScene(ScenePath);
+            if (openScene)
+            {
+                EditorUtility.DisplayDialog("NovaOS FNF Setup",
+                    "Created:\n" + PrefabPath + "\n\n" + ScenePath +
+                    "\n\nThe layout and systems are preassembled; imported content and UdonSharp compilation still need validation.",
+                    "Open Test Scene");
+                EditorSceneManager.OpenScene(ScenePath);
+            }
+            else
+            {
+                EditorSceneManager.CloseScene(scene, true);
+                Debug.Log("NovaOS FNF starter prefab and test scene generated automatically.");
+            }
         }
 
         [MenuItem("NovaOS/FNF/Setup/Rebuild Drag-and-Drop Game and Test Scene")]
@@ -124,7 +132,8 @@ namespace NovaOS.FNF.Editor
             var mainActions = new List<NovaFNFMenuAction>();
             for (int i = 0; i < mainLabels.Length; i++)
             {
-                float y = (RefHeight - (160f * (mainLabels.Length - 1))) * 0.5f - i * 160f;
+                float top = (RefHeight - (160f * (mainLabels.Length - 1))) * 0.5f;
+                float y = RefHeight * 0.5f - (top + i * 160f);
                 GameObject item = Button(screens[1].transform, mainLabels[i], new Vector2(0, y), new Vector2(430, 88), 48);
                 var action = Add<NovaFNFMenuAction>(item);
                 action.menuController = menu;
