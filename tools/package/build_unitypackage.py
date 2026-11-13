@@ -46,10 +46,16 @@ def meta_for(path: str, is_dir: bool) -> str:
 
 
 def safe_files(root: Path) -> Iterable[Path]:
-    for p in sorted(root.rglob("*")):
-        if not p.is_file():
-            continue
-        if ".git" in p.parts or p.name.endswith(".meta"):
+    if not root.exists():
+        return
+    candidates = [p for p in root.rglob("*") if p.is_file()
+                  and ".git" not in p.parts and not p.name.endswith(".meta")]
+    ogg_stems = {p.with_suffix("").as_posix().lower()
+                 for p in candidates if p.suffix.lower() == ".ogg"}
+    for p in sorted(candidates):
+        # The official repository may contain MP3 and OGG copies of the same
+        # track. Prefer OGG so the Unity catalog does not index duplicates.
+        if p.suffix.lower() == ".mp3" and p.with_suffix("").as_posix().lower() in ogg_stems:
             continue
         yield p
 
