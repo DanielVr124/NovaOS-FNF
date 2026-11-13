@@ -271,7 +271,7 @@ namespace NovaOS.FNF
             countdownActive = false;
             if (countdownText != null) countdownText.text = "";
 
-            playing = audioPlayer != null && audioPlayer.PlaySong(selectedSongId);
+            playing = audioPlayer != null && audioPlayer.PlaySong(selectedSongId, selectedVariationId);
             paused = false;
             if (!playing)
             {
