@@ -62,15 +62,16 @@ namespace NovaOS.FNF
             for (int i = 0; i < chartBank.songIds.Length; i++)
             {
                 string songId = chartBank.songIds[i];
-                if (string.IsNullOrEmpty(songId) || HasSong(songId)) continue;
+                string variationId = (chartBank.variationIds != null && i < chartBank.variationIds.Length)
+                    ? chartBank.variationIds[i] : "default";
+                if (string.IsNullOrEmpty(songId) || HasSongVariation(songId, variationId)) continue;
 
                 uniqueSongIds[songCount] = songId;
                 uniqueSongNames[songCount] = (chartBank.songNames != null && i < chartBank.songNames.Length)
                     ? chartBank.songNames[i] : songId;
                 uniqueArtists[songCount] = (chartBank.artists != null && i < chartBank.artists.Length)
                     ? chartBank.artists[i] : "";
-                uniqueVariations[songCount] = (chartBank.variationIds != null && i < chartBank.variationIds.Length)
-                    ? chartBank.variationIds[i] : "default";
+                uniqueVariations[songCount] = variationId;
                 defaultDifficulties[songCount] = FindPreferredDifficulty(songId, uniqueVariations[songCount]);
                 songCount++;
             }
@@ -170,6 +171,7 @@ namespace NovaOS.FNF
                     favoriteButtons[slotIndex].freeplayList = this;
                     favoriteButtons[slotIndex].saveManager = saveManager;
                     favoriteButtons[slotIndex].songId = valid ? uniqueSongIds[songIndex] : "";
+                    favoriteButtons[slotIndex].variationId = valid ? uniqueVariations[songIndex] : "";
                     favoriteButtons[slotIndex].Refresh();
                 }
             }
@@ -181,10 +183,11 @@ namespace NovaOS.FNF
                 pageLabel.text = pageCount == 0 ? "0 / 0" : (currentPage + 1) + " / " + pageCount;
         }
 
-        public void ToggleFavorite(string songId)
+        public void ToggleFavorite(string songId, string variationId)
         {
             if (saveManager == null || string.IsNullOrEmpty(songId)) return;
-            saveManager.SetFavorite(songId, !saveManager.IsFavorite(songId));
+            string favoriteKey = FavoriteKey(songId, variationId);
+            saveManager.SetFavorite(favoriteKey, !saveManager.IsFavorite(favoriteKey));
             RebuildVisibleList();
         }
 
@@ -196,7 +199,8 @@ namespace NovaOS.FNF
             visibleSongCount = 0;
             for (int i = 0; i < songCount; i++)
             {
-                bool include = !favoritesOnly || (saveManager != null && saveManager.IsFavorite(uniqueSongIds[i]));
+                bool include = !favoritesOnly || (saveManager != null &&
+                    saveManager.IsFavorite(FavoriteKey(uniqueSongIds[i], uniqueVariations[i])));
                 if (include)
                     visibleSongIndices[visibleSongCount++] = i;
             }
@@ -226,11 +230,16 @@ namespace NovaOS.FNF
             RefreshPage();
         }
 
-        private bool HasSong(string songId)
+        private bool HasSongVariation(string songId, string variationId)
         {
             for (int i = 0; i < songCount; i++)
-                if (uniqueSongIds[i] == songId) return true;
+                if (uniqueSongIds[i] == songId && uniqueVariations[i] == variationId) return true;
             return false;
+        }
+
+        private string FavoriteKey(string songId, string variationId)
+        {
+            return songId + "-" + variationId;
         }
 
         private string FindPreferredDifficulty(string songId, string variationId)
