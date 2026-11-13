@@ -20,6 +20,9 @@ namespace NovaOS.FNF
         public Text bestAccuracyText;
         public Text newRecordText;
         public NovaFNFSaveManager saveManager;
+        public NovaFNFMenuController menuController;
+        public NovaFNFStoryProgression storyProgression;
+        public NovaFNFGameplayController gameplayController;
 
         public void ShowResults(string songTitle, int score, int misses, float accuracy, int maxCombo, bool failed)
         {
@@ -42,6 +45,37 @@ namespace NovaOS.FNF
             if (bestAccuracyText != null) bestAccuracyText.text = "BEST ACCURACY: " + bestAccuracy.ToString("F2") + "%";
             if (newRecordText != null)
                 newRecordText.text = score >= bestScore && score > 0 ? "NEW HIGH SCORE!" : "";
+        }
+
+        public void ContinuePressed()
+        {
+            if (storyProgression != null && storyProgression.storyRunActive &&
+                storyProgression.waitingForResultsContinue)
+            {
+                storyProgression.ContinueAfterResults();
+                return;
+            }
+
+            if (menuController != null)
+                menuController.OpenFreeplay();
+        }
+
+        public void RetryPressed()
+        {
+            if (gameplayController != null)
+            {
+                if (menuController != null && menuController.gameplayScreenIndex >= 0)
+                    menuController.OpenGameplay();
+                gameplayController.RestartSong();
+            }
+        }
+
+        public void ReturnToMainMenuPressed()
+        {
+            if (gameplayController != null && gameplayController.audioPlayer != null)
+                gameplayController.audioPlayer.StopSong();
+            if (menuController != null)
+                menuController.OpenMainMenu();
         }
 
         private string GetGrade(float accuracy, int misses, bool failed)
