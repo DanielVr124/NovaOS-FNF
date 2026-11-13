@@ -49,6 +49,16 @@ namespace NovaOS.FNF.Editor
                 vocals.Add(item.vocals);
             }
 
+            var voiceSongIds = new List<string>();
+            var voiceCharacterIds = new List<string>();
+            var voiceClips = new List<AudioClip>();
+            for (int i = 0; i < catalog.VoiceTracks.Count; i++)
+            {
+                voiceSongIds.Add(NovaAudioCatalog.NormalizeId(catalog.VoiceTracks[i].songId));
+                voiceCharacterIds.Add(NovaAudioCatalog.NormalizeId(catalog.VoiceTracks[i].characterId));
+                voiceClips.Add(catalog.VoiceTracks[i].clip);
+            }
+
             var menuIds = new List<string>();
             var menuClips = new List<AudioClip>();
             for (int i = 0; i < catalog.MenuMusic.Count; i++)
@@ -69,6 +79,9 @@ namespace NovaOS.FNF.Editor
             SetStringArray(serialized, "songIds", songIds);
             SetObjectArray(serialized, "instrumentals", instrumentals);
             SetObjectArray(serialized, "vocals", vocals);
+            SetStringArray(serialized, "voiceSongIds", voiceSongIds);
+            SetStringArray(serialized, "voiceCharacterIds", voiceCharacterIds);
+            SetObjectArray(serialized, "voiceClips", voiceClips);
             SetStringArray(serialized, "menuMusicIds", menuIds);
             SetObjectArray(serialized, "menuMusicClips", menuClips);
             SetStringArray(serialized, "soundEffectIds", sfxIds);
@@ -77,7 +90,7 @@ namespace NovaOS.FNF.Editor
 
             EditorUtility.SetDirty(bank);
             PrefabUtility.RecordPrefabInstancePropertyModifications(bank);
-            Debug.Log("Populated VRChat audio bank: " + songIds.Count + " songs, " + menuIds.Count + " menu tracks, " + sfxIds.Count + " sound effects.", bank);
+            Debug.Log("Populated VRChat audio bank: " + songIds.Count + " songs, " + menuIds.Count + " menu tracks, " + sfxIds.Count + " character vocal tracks, " + menuIds.Count + " menu tracks, " + sfxIds.Count + " sound effects.", bank);
             EditorUtility.DisplayDialog(
                 "NovaOS Audio Library",
                 "VRChat audio bank populated.\n\nSongs: " + songIds.Count +
