@@ -209,6 +209,8 @@ namespace NovaOS.FNF.Editor
             definition.animateAtlasJson = AssetDatabase.LoadAssetAtPath<TextAsset>(root + "/Animation.json");
             definition.spriteMapJson = AssetDatabase.LoadAssetAtPath<TextAsset>(root + "/spritemap1.json");
             definition.spriteMapTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(root + "/spritemap1.png");
+            definition.sparrowAtlasXml = AssetDatabase.LoadAssetAtPath<TextAsset>(root + ".xml");
+            definition.sparrowTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(root + ".png");
         }
 
         private static void ResolveStageAtlases(NovaFNFStageDefinition definition)
@@ -221,6 +223,8 @@ namespace NovaOS.FNF.Editor
                 definition.props[i].sourceAnimationData = AssetDatabase.LoadAssetAtPath<TextAsset>(root + "/Animation.json");
                 definition.props[i].spriteAtlasData = AssetDatabase.LoadAssetAtPath<TextAsset>(root + "/spritemap1.json");
                 definition.props[i].spriteAtlasTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(root + "/spritemap1.png");
+                definition.props[i].sparrowAtlasXml = AssetDatabase.LoadAssetAtPath<TextAsset>(root + ".xml");
+                definition.props[i].sparrowTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(root + ".png");
             }
         }
 
@@ -246,7 +250,12 @@ namespace NovaOS.FNF.Editor
             return asset;
         }
 
-        private static Vector2 Pair(float[] values, Vector2 fallback = default(Vector2))
+        private static Vector2 Pair(float[] values)
+        {
+            return Pair(values, Vector2.zero);
+        }
+
+        private static Vector2 Pair(float[] values, Vector2 fallback)
         {
             if (values == null || values.Length < 2) return fallback;
             return new Vector2(values[0], values[1]);
