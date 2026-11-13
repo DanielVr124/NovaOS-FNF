@@ -1,5 +1,6 @@
 using UdonSharp;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace NovaOS.FNF
 {
@@ -18,10 +19,13 @@ namespace NovaOS.FNF
         public string difficultyId = "normal";
         public GameObject highlightVisual;
         public Animator itemAnimator;
+        public Button selectableButton;
+        public GameObject lockedVisual;
+        public bool locked;
 
         public void OnButtonPressed()
         {
-            if (menuController == null) return;
+            if (menuController == null || locked) return;
             if (actionId == 11)
                 menuController.SetSelectedWeek(weekIndex);
             if (!string.IsNullOrEmpty(songId))
@@ -29,6 +33,13 @@ namespace NovaOS.FNF
             if (!string.IsNullOrEmpty(variationId)) menuController.SetSelectedVariation(variationId);
             if (!string.IsNullOrEmpty(difficultyId)) menuController.SetSelectedDifficulty(difficultyId);
             menuController.RunAction(actionId);
+        }
+
+        public void SetLocked(bool isLocked)
+        {
+            locked = isLocked;
+            if (selectableButton != null) selectableButton.interactable = !isLocked;
+            if (lockedVisual != null) lockedVisual.SetActive(isLocked);
         }
 
         public void OnPointerEnter()
