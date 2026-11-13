@@ -113,8 +113,8 @@ namespace NovaOS.FNF.Editor
                         record.baseBpm = baseBpm;
                         record.scrollSpeed = GetNumber(scrollSpeeds, difficultyPair.Key,
                             GetNumber(scrollSpeeds, "default", 1f));
-                        record.previewStartSeconds = GetNumber(playData, "previewStart", 0f);
-                        record.previewEndSeconds = GetNumber(playData, "previewEnd", 0f);
+                        record.previewStartSeconds = GetNumber(playData, "previewStart", 0f) / 1000f;
+                        record.previewEndSeconds = GetNumber(playData, "previewEnd", 15000f) / 1000f;
                         record.bpmTimes.AddRange(bpmTimes);
                         record.bpmValues.AddRange(bpmValues);
 
