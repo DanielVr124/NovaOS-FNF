@@ -136,6 +136,17 @@ namespace NovaOS.FNF
             currentSongId = "";
         }
 
+        public bool IsSongSourcePlaying()
+        {
+            return instrumentalSource != null && instrumentalSource.isPlaying;
+        }
+
+        public float GetSongLengthSeconds()
+        {
+            if (instrumentalSource == null || instrumentalSource.clip == null) return 0f;
+            return instrumentalSource.clip.length;
+        }
+
         public float GetSongPositionSeconds()
         {
             if (!songLoaded || instrumentalSource == null) return 0f;
