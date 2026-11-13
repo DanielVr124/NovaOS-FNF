@@ -40,7 +40,12 @@ namespace NovaOS.FNF
 
         private void Start()
         {
-            ApplyAll();
+            // If PlayerData restored before this component's Start, reapply the saved
+            // values rather than overwriting them with Inspector defaults.
+            if (saveManager != null && saveManager.dataRestored)
+                saveManager.LoadGameplaySettings(this);
+            else
+                ApplyAll();
         }
 
         public void SetDownscroll(bool value)
