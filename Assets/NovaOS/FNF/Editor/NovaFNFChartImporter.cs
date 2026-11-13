@@ -79,6 +79,7 @@ namespace NovaOS.FNF.Editor
                     string artist = GetString(metadata, "artist", "");
                     Dictionary<string, object> playData = AsObject(GetValue(metadata, "playData"));
                     Dictionary<string, object> characters = AsObject(GetValue(playData, "characters"));
+                    Dictionary<string, object> ratings = AsObject(GetValue(playData, "ratings"));
                     string playerCharacter = Normalize(GetString(characters, "player", "bf"));
                     string opponentCharacter = Normalize(GetString(characters, "opponent", "dad"));
                     string girlfriendCharacter = Normalize(GetString(characters, "girlfriend", "gf"));
@@ -104,6 +105,7 @@ namespace NovaOS.FNF.Editor
                         record.songId = Normalize(songId);
                         record.variationId = Normalize(variationId);
                         record.difficultyId = Normalize(difficultyPair.Key);
+                        record.difficultyRating = (int)GetNumber(ratings, difficultyPair.Key, 0f);
                         record.key = record.songId + "|" + record.variationId + "|" + record.difficultyId;
                         record.songName = songName;
                         record.artist = artist;
@@ -193,6 +195,7 @@ namespace NovaOS.FNF.Editor
             List<string> songIds = new List<string>();
             List<string> variationIds = new List<string>();
             List<string> difficultyIds = new List<string>();
+            List<int> difficultyRatings = new List<int>();
             List<string> songNames = new List<string>();
             List<string> artists = new List<string>();
             List<string> playerCharacterIds = new List<string>();
@@ -225,6 +228,7 @@ namespace NovaOS.FNF.Editor
                 songIds.Add(chart.songId);
                 variationIds.Add(chart.variationId);
                 difficultyIds.Add(chart.difficultyId);
+                difficultyRatings.Add(chart.difficultyRating);
                 songNames.Add(chart.songName);
                 artists.Add(chart.artist);
                 playerCharacterIds.Add(chart.playerCharacterId);
@@ -259,6 +263,7 @@ namespace NovaOS.FNF.Editor
             SetStrings(serialized, "songIds", songIds);
             SetStrings(serialized, "variationIds", variationIds);
             SetStrings(serialized, "difficultyIds", difficultyIds);
+            SetInts(serialized, "difficultyRatings", difficultyRatings);
             SetStrings(serialized, "songNames", songNames);
             SetStrings(serialized, "artists", artists);
             SetStrings(serialized, "playerCharacterIds", playerCharacterIds);
@@ -454,6 +459,7 @@ namespace NovaOS.FNF.Editor
             public string songId;
             public string variationId;
             public string difficultyId;
+            public int difficultyRating;
             public string songName;
             public string artist;
             public string playerCharacterId;
