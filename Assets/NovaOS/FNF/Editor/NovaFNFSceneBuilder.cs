@@ -99,6 +99,8 @@ namespace NovaOS.FNF.Editor
             var story = Add<NovaFNFStoryProgression>(systems);
             var results = Add<NovaFNFResultsController>(systems);
             var menu = Add<NovaFNFMenuController>(systems);
+            var freeplayList = Add<NovaFNFFreeplayListController>(systems);
+            var difficultyList = Add<NovaFNFDifficultyListController>(systems);
 
             // World-space 16:9 canvas, with a 1280x720 reference coordinate system.
             GameObject canvasGo = Child(ui.transform, "FNF Canvas (1280x720 Reference)");
@@ -160,6 +162,84 @@ namespace NovaOS.FNF.Editor
             Text resultCombo = AddText(screens[9].transform, "MAX COMBO: 0", new Vector2(0, -110), 28, TextAnchor.MiddleCenter);
             Text resultGrade = AddText(screens[9].transform, "S", new Vector2(0, -180), 44, TextAnchor.MiddleCenter);
             AddText(screens[10].transform, "SELECT DIFFICULTY", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+
+            // Freeplay rows are pre-created for Udon-safe runtime population.
+            freeplayList.chartBank = chartBank;
+            freeplayList.menuController = menu;
+            freeplayList.saveManager = saves;
+            const int freeplaySlotCount = 8;
+            var freeplaySlots = new NovaFNFMenuAction[freeplaySlotCount];
+            var freeplayNames = new Text[freeplaySlotCount];
+            var freeplayArtists = new Text[freeplaySlotCount];
+            var freeplayScores = new Text[freeplaySlotCount];
+            for (int i = 0; i < freeplaySlotCount; i++)
+            {
+                float y = 150f - i * 68f;
+                GameObject row = Button(screens[3].transform, "SONG SLOT " + i,
+                    new Vector2(0, y), new Vector2(900, 58), 24);
+                NovaFNFMenuAction action = Add<NovaFNFMenuAction>(row);
+                action.menuController = menu;
+                action.actionId = 12;
+                action.selectableButton = row.GetComponent<Button>();
+                row.GetComponent<Button>().onClick.AddListener(action.OnButtonPressed);
+                freeplaySlots[i] = action;
+
+                Text songName = row.GetComponentInChildren<Text>();
+                songName.text = "";
+                RectTransform nameRect = songName.GetComponent<RectTransform>();
+                nameRect.anchoredPosition = new Vector2(-235, 0);
+                nameRect.sizeDelta = new Vector2(430, 54);
+                songName.alignment = TextAnchor.MiddleLeft;
+                freeplayNames[i] = songName;
+
+                freeplayArtists[i] = AddText(row.transform, "", new Vector2(150, 0), 17, TextAnchor.MiddleCenter);
+                freeplayArtists[i].GetComponent<RectTransform>().sizeDelta = new Vector2(250, 48);
+                freeplayScores[i] = AddText(row.transform, "", new Vector2(365, 0), 16, TextAnchor.MiddleRight);
+                freeplayScores[i].GetComponent<RectTransform>().sizeDelta = new Vector2(150, 48);
+            }
+            freeplayList.songSlots = freeplaySlots;
+            freeplayList.songNameLabels = freeplayNames;
+            freeplayList.artistLabels = freeplayArtists;
+            freeplayList.bestScoreLabels = freeplayScores;
+            Text freeplayPage = AddText(screens[3].transform, "0 / 0", new Vector2(0, -260), 22, TextAnchor.MiddleCenter);
+            freeplayList.pageLabel = freeplayPage;
+            GameObject previousPage = Button(screens[3].transform, "PREVIOUS", new Vector2(-390, -260), new Vector2(180, 54), 20);
+            previousPage.GetComponent<Button>().onClick.AddListener(freeplayList.PreviousPage);
+            GameObject nextPage = Button(screens[3].transform, "NEXT", new Vector2(390, -260), new Vector2(180, 54), 20);
+            nextPage.GetComponent<Button>().onClick.AddListener(freeplayList.NextPage);
+
+            // Five difficulty entries cover Easy/Normal/Hard plus Erect/Nightmare.
+            difficultyList.chartBank = chartBank;
+            difficultyList.menuController = menu;
+            const int difficultySlotCount = 5;
+            var difficultySlots = new NovaFNFMenuAction[difficultySlotCount];
+            var difficultyNames = new Text[difficultySlotCount];
+            var difficultyRatings = new Text[difficultySlotCount];
+            for (int i = 0; i < difficultySlotCount; i++)
+            {
+                float y = 150f - i * 82f;
+                GameObject row = Button(screens[10].transform, "DIFFICULTY SLOT " + i,
+                    new Vector2(0, y), new Vector2(650, 68), 28);
+                NovaFNFMenuAction action = Add<NovaFNFMenuAction>(row);
+                action.menuController = menu;
+                action.actionId = 7;
+                action.selectableButton = row.GetComponent<Button>();
+                row.GetComponent<Button>().onClick.AddListener(action.OnButtonPressed);
+                difficultySlots[i] = action;
+
+                Text difficultyName = row.GetComponentInChildren<Text>();
+                difficultyName.text = "";
+                difficultyName.alignment = TextAnchor.MiddleCenter;
+                difficultyNames[i] = difficultyName;
+                difficultyRatings[i] = AddText(row.transform, "", new Vector2(245, 0), 17, TextAnchor.MiddleRight);
+                difficultyRatings[i].GetComponent<RectTransform>().sizeDelta = new Vector2(130, 48);
+            }
+            difficultyList.difficultySlots = difficultySlots;
+            difficultyList.difficultyLabels = difficultyNames;
+            difficultyList.ratingLabels = difficultyRatings;
+            difficultyList.pageLabel = AddText(screens[10].transform, "0 AVAILABLE",
+                new Vector2(0, -260), 20, TextAnchor.MiddleCenter);
+            menu.difficultyList = difficultyList;
 
             // Explicit back buttons make the generated menus mouse/controller accessible.
             int[] backScreens = { 2, 3, 4, 5, 6, 7, 9, 10 };
@@ -273,6 +353,7 @@ namespace NovaOS.FNF.Editor
             menu.screens = screens;
             menu.menuAudioPlayer = audioPlayer;
             menu.previewChartBank = chartBank;
+            menu.difficultyList = difficultyList;
             menu.gameplayController = game;
             menu.inputBindings = input;
             menu.storyProgression = story;
