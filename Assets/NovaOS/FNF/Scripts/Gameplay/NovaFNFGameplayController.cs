@@ -15,6 +15,7 @@ namespace NovaOS.FNF
         public NovaFNFChartBank chartBank;
         public NovaFNFUdonAudioPlayer audioPlayer;
         public NovaFNFMenuController menuController;
+        public NovaFNFResultsController resultsController;
 
         [Header("Chart selection")]
         public string selectedSongId = "tutorial";
@@ -23,6 +24,9 @@ namespace NovaOS.FNF
         public bool downscroll;
         public float spawnLeadMs = 2200f;
         public float noteUnitsPerSecond = 2.5f;
+        public float scrollSpeedMultiplier = 1f;
+        public float inputOffsetMs;
+        public bool ghostTapping = true;
 
         [Header("Note field")]
         public Transform[] laneReceptors;
@@ -53,6 +57,7 @@ namespace NovaOS.FNF
         public int score;
         public int combo;
         public int misses;
+        public int highestCombo;
         public float health = 1f;
         public float accuracy;
         public bool playing;
@@ -66,6 +71,7 @@ namespace NovaOS.FNF
         private int weightedAccuracy;
         private NovaFNFNoteView[] heldSustainNotes = new NovaFNFNoteView[4];
         private float lastNoteEndMs;
+        private bool failed;
 
         public void SetSongSelection(string songId, string variationId, string difficultyId)
         {
@@ -105,6 +111,8 @@ namespace NovaOS.FNF
             score = 0;
             combo = 0;
             misses = 0;
+            highestCombo = 0;
+            failed = false;
             judgedNotes = 0;
             weightedAccuracy = 0;
             health = 1f;
@@ -159,7 +167,7 @@ namespace NovaOS.FNF
         {
             if (!playing || paused || lane < 0 || lane > 3) return;
 
-            float songTimeMs = audioPlayer.GetSongPositionSeconds() * 1000f;
+            float songTimeMs = audioPlayer.GetSongPositionSeconds() * 1000f + inputOffsetMs;
             NovaFNFNoteView bestNote = null;
             float bestDifference = 999999f;
 
@@ -178,7 +186,11 @@ namespace NovaOS.FNF
                 }
             }
 
-            if (bestNote == null) return;
+            if (bestNote == null)
+            {
+                if (!ghostTapping) RegisterMiss(null);
+                return;
+            }
             RegisterHit(bestNote, bestDifference);
         }
 
@@ -304,6 +316,7 @@ namespace NovaOS.FNF
                 score += sickScore;
                 weightedAccuracy += 100;
                 combo++;
+                if (combo > highestCombo) highestCombo = combo;
                 health += hitHealthGain;
             }
             else if (absoluteDifference <= goodWindowMs)
@@ -311,6 +324,7 @@ namespace NovaOS.FNF
                 score += goodScore;
                 weightedAccuracy += 75;
                 combo++;
+                if (combo > highestCombo) highestCombo = combo;
                 health += hitHealthGain * 0.75f;
             }
             else
@@ -344,7 +358,10 @@ namespace NovaOS.FNF
             RefreshUI();
 
             if (health <= 0f)
+            {
+                failed = true;
                 FinishSong();
+            }
         }
 
         private NovaFNFNoteView GetFreeNote()
@@ -380,7 +397,7 @@ namespace NovaOS.FNF
         {
             if (chartIndex < 0 || chartBank.scrollSpeeds == null || chartIndex >= chartBank.scrollSpeeds.Length)
                 return 1f;
-            return Mathf.Max(0.1f, chartBank.scrollSpeeds[chartIndex]);
+            return Mathf.Max(0.1f, chartBank.scrollSpeeds[chartIndex] * scrollSpeedMultiplier);
         }
 
         private void ClampHealth()
@@ -406,6 +423,14 @@ namespace NovaOS.FNF
             if (audioPlayer != null) audioPlayer.StopSong();
             ClearNotes();
             if (pausePanel != null) pausePanel.SetActive(false);
+            if (resultsController != null)
+            {
+                string title = selectedSongId;
+                if (chartBank != null && chartBank.songNames != null &&
+                    chartIndex >= 0 && chartIndex < chartBank.songNames.Length)
+                    title = chartBank.songNames[chartIndex];
+                resultsController.ShowResults(title, score, misses, accuracy, highestCombo, failed);
+            }
             if (menuController != null) menuController.OpenResults();
         }
     }
