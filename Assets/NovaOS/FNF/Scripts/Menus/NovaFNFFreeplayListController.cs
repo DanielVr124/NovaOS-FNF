@@ -144,7 +144,7 @@ namespace NovaOS.FNF
                     if (valid)
                     {
                         slot.menuController = menuController;
-                        slot.actionId = 7;
+                        slot.actionId = 12;
                         slot.songId = uniqueSongIds[songIndex];
                         slot.variationId = uniqueVariations[songIndex];
                         slot.difficultyId = defaultDifficulties[songIndex];
