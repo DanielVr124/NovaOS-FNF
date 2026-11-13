@@ -56,12 +56,13 @@ namespace NovaOS.FNF.Editor
 
                 if (audioBank.voiceSongIds != null)
                 {
-                    Check(audioBank.voiceSongIds.Length == audioBank.voiceCharacterIds.Length,
+                    Check(audioBank.voiceCharacterIds != null &&
+                        audioBank.voiceSongIds.Length == audioBank.voiceCharacterIds.Length,
                         "Character voice song and character arrays have matching lengths.", errors, passed);
-                    Check(audioBank.voiceVariationIds == null ||
+                    Check(audioBank.voiceVariationIds != null &&
                         audioBank.voiceVariationIds.Length == audioBank.voiceSongIds.Length,
                         "Character voice variation IDs align with voice entries.", errors, passed);
-                    Check(audioBank.voiceClips == null ||
+                    Check(audioBank.voiceClips != null &&
                         audioBank.voiceClips.Length == audioBank.voiceSongIds.Length,
                         "Character voice clips align with voice entries.", errors, passed);
                 }
@@ -98,6 +99,25 @@ namespace NovaOS.FNF.Editor
 
                 if (chartBank.songIds == null || chartBank.songIds.Length == 0)
                     warnings.Add("Chart bank contains no imported charts yet.");
+
+                if (audioBank != null && chartBank.songIds != null)
+                {
+                    int missingAudio = 0;
+                    for (int i = 0; i < chartBank.songIds.Length; i++)
+                    {
+                        string songId = chartBank.songIds[i];
+                        string variation = chartBank.variationIds != null && i < chartBank.variationIds.Length
+                            ? chartBank.variationIds[i] : "default";
+                        if (audioBank.FindSongIndex(songId, variation) < 0)
+                        {
+                            missingAudio++;
+                            warnings.Add("No imported audio for chart: " + songId + " (" + variation + ")");
+                        }
+                    }
+                    Check(missingAudio == 0,
+                        "Every imported chart variation has a matching instrumental audio reference.",
+                        warnings, passed);
+                }
             }
 
             if (menu != null)
