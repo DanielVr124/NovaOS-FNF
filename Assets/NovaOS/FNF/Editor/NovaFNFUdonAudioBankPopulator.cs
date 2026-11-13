@@ -39,23 +39,27 @@ namespace NovaOS.FNF.Editor
             }
 
             var songIds = new List<string>();
+            var songVariationIds = new List<string>();
             var instrumentals = new List<AudioClip>();
             var vocals = new List<AudioClip>();
             for (int i = 0; i < catalog.Songs.Count; i++)
             {
                 NovaAudioCatalog.SongAudio item = catalog.Songs[i];
                 songIds.Add(NovaAudioCatalog.NormalizeId(item.songId));
+                songVariationIds.Add(NovaAudioCatalog.NormalizeId(item.variationId));
                 instrumentals.Add(item.instrumental);
                 vocals.Add(item.vocals);
             }
 
             var voiceSongIds = new List<string>();
             var voiceCharacterIds = new List<string>();
+            var voiceVariationIds = new List<string>();
             var voiceClips = new List<AudioClip>();
             for (int i = 0; i < catalog.VoiceTracks.Count; i++)
             {
                 voiceSongIds.Add(NovaAudioCatalog.NormalizeId(catalog.VoiceTracks[i].songId));
                 voiceCharacterIds.Add(NovaAudioCatalog.NormalizeId(catalog.VoiceTracks[i].characterId));
+                voiceVariationIds.Add(NovaAudioCatalog.NormalizeId(catalog.VoiceTracks[i].variationId));
                 voiceClips.Add(catalog.VoiceTracks[i].clip);
             }
 
@@ -77,10 +81,12 @@ namespace NovaOS.FNF.Editor
 
             SerializedObject serialized = new SerializedObject(bank);
             SetStringArray(serialized, "songIds", songIds);
+            SetStringArray(serialized, "songVariationIds", songVariationIds);
             SetObjectArray(serialized, "instrumentals", instrumentals);
             SetObjectArray(serialized, "vocals", vocals);
             SetStringArray(serialized, "voiceSongIds", voiceSongIds);
             SetStringArray(serialized, "voiceCharacterIds", voiceCharacterIds);
+            SetStringArray(serialized, "voiceVariationIds", voiceVariationIds);
             SetObjectArray(serialized, "voiceClips", voiceClips);
             SetStringArray(serialized, "menuMusicIds", menuIds);
             SetObjectArray(serialized, "menuMusicClips", menuClips);
@@ -90,7 +96,7 @@ namespace NovaOS.FNF.Editor
 
             EditorUtility.SetDirty(bank);
             PrefabUtility.RecordPrefabInstancePropertyModifications(bank);
-            Debug.Log("Populated VRChat audio bank: " + songIds.Count + " songs, " + voiceClips.Count + " character vocal tracks, " + menuIds.Count + " menu tracks, " + sfxIds.Count + " sound effects.", bank);
+            Debug.Log("Populated VRChat audio bank: " + songIds.Count + " song variations, " + voiceClips.Count + " character vocal tracks, " + menuIds.Count + " menu tracks, " + sfxIds.Count + " sound effects.", bank);
             EditorUtility.DisplayDialog(
                 "NovaOS Audio Library",
                 "VRChat audio bank populated.\n\nSongs: " + songIds.Count +
