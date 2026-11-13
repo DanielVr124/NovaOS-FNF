@@ -13,6 +13,7 @@ namespace NovaOS.FNF
         public NovaFNFSaveManager saveManager;
         public string[] weekIds;
         public string[] weekTitles;
+        public bool[] weekVisible;
         public int[] weekSongStarts;
         public int[] weekSongCounts;
 
