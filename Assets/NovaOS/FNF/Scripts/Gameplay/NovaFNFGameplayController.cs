@@ -16,6 +16,7 @@ namespace NovaOS.FNF
         public NovaFNFUdonAudioPlayer audioPlayer;
         public NovaFNFMenuController menuController;
         public NovaFNFResultsController resultsController;
+        public NovaFNFStoryProgression storyProgression;
 
         [Header("Chart selection")]
         public string selectedSongId = "tutorial";
@@ -423,6 +424,12 @@ namespace NovaOS.FNF
             if (audioPlayer != null) audioPlayer.StopSong();
             ClearNotes();
             if (pausePanel != null) pausePanel.SetActive(false);
+            if (storyProgression != null && storyProgression.storyRunActive)
+            {
+                if (failed) storyProgression.CancelStoryRun();
+                else storyProgression.MarkCurrentSongFinished();
+            }
+
             if (resultsController != null)
             {
                 string title = selectedSongId;
