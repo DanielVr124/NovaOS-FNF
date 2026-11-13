@@ -129,7 +129,7 @@ namespace NovaOS.FNF
 
         public void SaveGameplaySettings(bool downscroll, bool ghostTapping, float scrollSpeed,
             float inputOffsetMs, bool cameraZooms, bool flashingLights,
-            float instrumentalVolume, float vocalsVolume, float menuVolume, float sfxVolume)
+            bool subtitles, bool reducedMotion, float instrumentalVolume, float vocalsVolume, float menuVolume, float sfxVolume)
         {
             VRCPlayerApi local = Networking.LocalPlayer;
             if (!dataRestored || local == null) return;
@@ -140,6 +140,8 @@ namespace NovaOS.FNF
             PlayerData.SetFloat(Prefix + "Settings.InputOffsetMs", inputOffsetMs);
             PlayerData.SetBool(Prefix + "Settings.CameraZooms", cameraZooms);
             PlayerData.SetBool(Prefix + "Settings.FlashingLights", flashingLights);
+            PlayerData.SetBool(Prefix + "Settings.Subtitles", subtitles);
+            PlayerData.SetBool(Prefix + "Settings.ReducedMotion", reducedMotion);
             PlayerData.SetFloat(Prefix + "Settings.InstrumentalVolume", instrumentalVolume);
             PlayerData.SetFloat(Prefix + "Settings.VocalsVolume", vocalsVolume);
             PlayerData.SetFloat(Prefix + "Settings.MenuVolume", menuVolume);
@@ -164,6 +166,8 @@ namespace NovaOS.FNF
             target.inputOffsetMs = Mathf.Clamp(PlayerData.GetFloat(local, Prefix + "Settings.InputOffsetMs"), -250f, 250f);
             target.cameraZooms = PlayerData.GetBool(local, Prefix + "Settings.CameraZooms");
             target.flashingLights = PlayerData.GetBool(local, Prefix + "Settings.FlashingLights");
+            target.subtitles = PlayerData.GetBool(local, Prefix + "Settings.Subtitles");
+            target.reducedMotion = PlayerData.GetBool(local, Prefix + "Settings.ReducedMotion");
             target.instrumentalVolume = PlayerData.GetFloat(local, Prefix + "Settings.InstrumentalVolume");
             target.vocalsVolume = PlayerData.GetFloat(local, Prefix + "Settings.VocalsVolume");
             target.menuMusicVolume = PlayerData.GetFloat(local, Prefix + "Settings.MenuVolume");
