@@ -63,7 +63,7 @@ namespace NovaOS.FNF
             float verticalDistance = secondsUntilHit * unitsPerSecond * scrollSpeed;
             if (downscroll) verticalDistance = -verticalDistance;
 
-            transform.position = receptor.position + Vector3.up * verticalDistance;
+            transform.position = receptor.position + receptor.up * verticalDistance;
             transform.rotation = receptor.rotation;
 
             if (sustainBody != null && sustainLengthMs > 0f)
