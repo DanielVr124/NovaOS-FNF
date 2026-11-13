@@ -152,13 +152,35 @@ namespace NovaOS.FNF.Editor
             AddText(screens[5].transform, "CONTROLS", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
             AddText(screens[6].transform, "AUDIO OPTIONS", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
             AddText(screens[7].transform, "ACCESSIBILITY", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
-            AddText(screens[9].transform, "RESULTS", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            Text resultsHeader = AddText(screens[9].transform, "RESULTS", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            Text resultSong = AddText(screens[9].transform, "SONG", new Vector2(0, 150), 36, TextAnchor.MiddleCenter);
+            Text resultScore = AddText(screens[9].transform, "0", new Vector2(0, 70), 32, TextAnchor.MiddleCenter);
+            Text resultMisses = AddText(screens[9].transform, "MISSES: 0", new Vector2(0, 10), 28, TextAnchor.MiddleCenter);
+            Text resultAccuracy = AddText(screens[9].transform, "ACCURACY: 100%", new Vector2(0, -50), 28, TextAnchor.MiddleCenter);
+            Text resultCombo = AddText(screens[9].transform, "MAX COMBO: 0", new Vector2(0, -110), 28, TextAnchor.MiddleCenter);
+            Text resultGrade = AddText(screens[9].transform, "S", new Vector2(0, -180), 44, TextAnchor.MiddleCenter);
             AddText(screens[10].transform, "SELECT DIFFICULTY", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+
+            // Explicit back buttons make the generated menus mouse/controller accessible.
+            int[] backScreens = { 2, 3, 4, 5, 6, 7, 9, 10 };
+            for (int b = 0; b < backScreens.Length; b++)
+            {
+                int screenIndex = backScreens[b];
+                GameObject backButton = Button(screens[screenIndex].transform, "BACK", new Vector2(-500, -300), new Vector2(190, 64), 28);
+                var backAction = Add<NovaFNFMenuAction>(backButton);
+                backAction.menuController = menu;
+                backAction.actionId = 3;
+                backAction.selectableButton = backButton.GetComponent<Button>();
+                backButton.GetComponent<Button>().onClick.AddListener(backAction.OnButtonPressed);
+            }
 
             // Gameplay HUD. Official source positions player strumline on the right,
             // opponent on the left, health bar centered at 90% height (upscroll).
             GameObject hud = Child(screens[8].transform, "HUD");
-            AddText(hud.transform, "SCORE: 0", new Vector2(420, -285), 25, TextAnchor.MiddleRight);
+            Text scoreText = AddText(hud.transform, "SCORE: 0", new Vector2(420, -318), 25, TextAnchor.MiddleRight);
+            Text comboText = AddText(hud.transform, "", new Vector2(0, 85), 30, TextAnchor.MiddleCenter);
+            Text missesText = AddText(hud.transform, "MISSES: 0", new Vector2(-420, -318), 22, TextAnchor.MiddleLeft);
+            Text accuracyText = AddText(hud.transform, "100.00%", new Vector2(0, -318), 22, TextAnchor.MiddleCenter);
             Image healthBg = RectImage(hud.transform, "Health Bar Background", new Vector2(0, -288), new Vector2(520, 28), new Color(0.05f,0.05f,0.05f,0.95f));
             Image healthFill = RectImage(healthBg.transform, "Health Fill", Vector2.zero, new Vector2(512, 20), new Color(0.2f,0.9f,0.35f,1f));
             healthFill.type = Image.Type.Filled;
@@ -239,6 +261,14 @@ namespace NovaOS.FNF.Editor
             game.notePool = pool.ToArray();
             game.judgementPopup = popup;
             game.healthFill = healthFill;
+            game.scoreText = scoreText;
+            game.comboText = comboText;
+            game.missesText = missesText;
+            game.accuracyText = accuracyText;
+            GameObject pausePanel = Panel(screens[8].GetComponent<RectTransform>(), "Pause Panel", false);
+            Image pauseShade = RectImage(pausePanel.transform, "Pause Shade", Vector2.zero, new Vector2(RefWidth, RefHeight), new Color(0,0,0,0.72f));
+            AddText(pausePanel.transform, "PAUSED", new Vector2(0, 80), 64, TextAnchor.MiddleCenter);
+            game.pausePanel = pausePanel;
 
             menu.screens = screens;
             menu.menuAudioPlayer = audioPlayer;
@@ -264,6 +294,12 @@ namespace NovaOS.FNF.Editor
             results.menuController = menu;
             results.storyProgression = story;
             results.gameplayController = game;
+            results.songTitleText = resultSong;
+            results.scoreText = resultScore;
+            results.missesText = resultMisses;
+            results.accuracyText = resultAccuracy;
+            results.maxComboText = resultCombo;
+            results.gradeText = resultGrade;
 
             // Hide every screen except title at authoring time.
             for (int i = 0; i < screens.Length; i++) screens[i].SetActive(i == 0);
