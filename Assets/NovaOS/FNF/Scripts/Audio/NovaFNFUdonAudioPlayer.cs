@@ -13,6 +13,7 @@ namespace NovaOS.FNF
         public NovaFNFUdonAudioBank audioBank;
         public AudioSource instrumentalSource;
         public AudioSource vocalsSource;
+        public AudioSource opponentVocalsSource;
         public AudioSource menuMusicSource;
         public AudioSource menuMusicSecondarySource;
         public AudioSource previewSource;
@@ -21,6 +22,7 @@ namespace NovaOS.FNF
         [Header("Playback")]
         [Range(0f, 1f)] public float instrumentalVolume = 1f;
         [Range(0f, 1f)] public float vocalsVolume = 1f;
+        [Range(0f, 1f)] public float opponentVocalsVolume = 1f;
         [Range(0f, 1f)] public float menuMusicVolume = 1f;
         [Range(0f, 1f)] public float previewVolume = 0.75f;
         [Range(0f, 1f)] public float soundEffectVolume = 1f;
@@ -29,6 +31,7 @@ namespace NovaOS.FNF
 
         public string currentSongId = "";
         public string selectedVocalCharacterId = "bf";
+        public string selectedOpponentVocalCharacterId = "dad";
         public bool songLoaded;
         public bool songPaused;
 
@@ -48,22 +51,25 @@ namespace NovaOS.FNF
         {
             UpdateMenuMusicFade();
             UpdatePreview();
-            if (!songLoaded || songPaused) return;
-            if (instrumentalSource == null || vocalsSource == null) return;
-            if (!instrumentalSource.isPlaying || !vocalsSource.isPlaying) return;
-            if (vocalsSource.clip == null) return;
-
-            float drift = instrumentalSource.time - vocalsSource.time;
-            if (Mathf.Abs(drift) > vocalResyncThreshold)
-            {
-                float safeTime = Mathf.Clamp(vocalsSource.time + drift, 0f, vocalsSource.clip.length);
-                vocalsSource.time = safeTime;
-            }
+            if (!songLoaded || songPaused || instrumentalSource == null) return;
+            ResyncVoiceSource(vocalsSource);
+            ResyncVoiceSource(opponentVocalsSource);
         }
 
         public void SetVocalCharacter(string characterId)
         {
             selectedVocalCharacterId = characterId;
+        }
+
+        public void SetOpponentVocalCharacter(string characterId)
+        {
+            selectedOpponentVocalCharacterId = characterId;
+        }
+
+        public void SetVocalCharacters(string playerCharacterId, string opponentCharacterId)
+        {
+            selectedVocalCharacterId = playerCharacterId;
+            selectedOpponentVocalCharacterId = opponentCharacterId;
         }
 
         public bool PlaySong(string songId)
@@ -73,9 +79,9 @@ namespace NovaOS.FNF
 
         public bool PlaySongFromTime(string songId, float startSeconds)
         {
-            if (audioBank == null || instrumentalSource == null || vocalsSource == null)
+            if (audioBank == null || instrumentalSource == null)
             {
-                Debug.LogError("NovaFNFUdonAudioPlayer is missing its audio bank or song AudioSources.");
+                Debug.LogError("NovaFNFUdonAudioPlayer is missing its audio bank or instrumental AudioSource.");
                 return false;
             }
 
@@ -103,19 +109,34 @@ namespace NovaOS.FNF
             if (vocal == null && audioBank.vocals != null && index < audioBank.vocals.Length)
                 vocal = audioBank.vocals[index];
 
-            vocalsSource.clip = vocal;
-            vocalsSource.volume = vocalsVolume;
-            vocalsSource.loop = false;
+            if (vocalsSource != null)
+            {
+                vocalsSource.clip = vocal;
+                vocalsSource.volume = vocalsVolume;
+                vocalsSource.loop = false;
+            }
+
+            AudioClip opponentVocal = audioBank.GetVoiceClip(songId, selectedOpponentVocalCharacterId);
+            if (opponentVocalsSource != null)
+            {
+                opponentVocalsSource.clip = opponentVocal;
+                opponentVocalsSource.volume = opponentVocalsVolume;
+                opponentVocalsSource.loop = false;
+            }
 
             float start = Mathf.Clamp(startSeconds, 0f, Mathf.Max(0f, instrumental.length - 0.01f));
             instrumentalSource.time = start;
-            if (vocal != null && start < vocal.length)
+            if (vocalsSource != null && vocal != null && start < vocal.length)
                 vocalsSource.time = start;
+            if (opponentVocalsSource != null && opponentVocal != null && start < opponentVocal.length)
+                opponentVocalsSource.time = start;
 
-            // Both Play calls run in the same Udon update, avoiding a deliberate one-source delay.
+            // All three stems start in the same Udon update.
             instrumentalSource.Play();
-            if (vocal != null && start < vocal.length)
+            if (vocalsSource != null && vocal != null && start < vocal.length)
                 vocalsSource.Play();
+            if (opponentVocalsSource != null && opponentVocal != null && start < opponentVocal.length)
+                opponentVocalsSource.Play();
 
             currentSongId = songId;
             songLoaded = true;
@@ -128,6 +149,7 @@ namespace NovaOS.FNF
             if (!songLoaded || songPaused) return;
             if (instrumentalSource != null) instrumentalSource.Pause();
             if (vocalsSource != null) vocalsSource.Pause();
+            if (opponentVocalsSource != null) opponentVocalsSource.Pause();
             songPaused = true;
         }
 
@@ -136,6 +158,7 @@ namespace NovaOS.FNF
             if (!songLoaded || !songPaused) return;
             if (instrumentalSource != null) instrumentalSource.UnPause();
             if (vocalsSource != null) vocalsSource.UnPause();
+            if (opponentVocalsSource != null) opponentVocalsSource.UnPause();
             songPaused = false;
         }
 
@@ -143,17 +166,33 @@ namespace NovaOS.FNF
         {
             if (instrumentalSource != null) instrumentalSource.Stop();
             if (vocalsSource != null) vocalsSource.Stop();
+            if (opponentVocalsSource != null) opponentVocalsSource.Stop();
             StopSongPreview();
             songLoaded = false;
             songPaused = false;
             currentSongId = "";
         }
 
+        private void ResyncVoiceSource(AudioSource voiceSource)
+        {
+            if (voiceSource == null || voiceSource.clip == null ||
+                instrumentalSource == null || !instrumentalSource.isPlaying ||
+                !voiceSource.isPlaying) return;
+
+            float drift = instrumentalSource.time - voiceSource.time;
+            if (Mathf.Abs(drift) > vocalResyncThreshold)
+            {
+                float safeTime = Mathf.Clamp(voiceSource.time + drift, 0f, voiceSource.clip.length);
+                voiceSource.time = safeTime;
+            }
+        }
+
         public bool IsSongSourcePlaying()
         {
             bool instrumentalPlaying = instrumentalSource != null && instrumentalSource.isPlaying;
             bool vocalsPlaying = vocalsSource != null && vocalsSource.isPlaying;
-            return instrumentalPlaying || vocalsPlaying;
+            bool opponentVocalsPlaying = opponentVocalsSource != null && opponentVocalsSource.isPlaying;
+            return instrumentalPlaying || vocalsPlaying || opponentVocalsPlaying;
         }
 
         public float GetSongLengthSeconds()
