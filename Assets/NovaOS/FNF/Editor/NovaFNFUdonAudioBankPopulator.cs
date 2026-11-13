@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NovaOS.FNF;
 using UnityEditor;
 using UnityEngine;
+using UdonSharpEditor;
 
 namespace NovaOS.FNF.Editor
 {
@@ -20,7 +21,7 @@ namespace NovaOS.FNF.Editor
                 return;
             }
 
-            NovaFNFUdonAudioBank bank = selected.GetComponent<NovaFNFUdonAudioBank>();
+            NovaFNFUdonAudioBank bank = selected.GetUdonSharpComponent<NovaFNFUdonAudioBank>();
             if (bank == null)
             {
                 EditorUtility.DisplayDialog(
