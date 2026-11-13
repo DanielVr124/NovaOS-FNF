@@ -18,6 +18,7 @@ namespace NovaOS.FNF
         public NovaFNFResultsController resultsController;
         public NovaFNFStoryProgression storyProgression;
         public NovaFNFBeatClock beatClock;
+        public NovaFNFChartEventRouter chartEventRouter;
         public NovaFNFSaveManager saveManager;
 
         [Header("Chart selection")]
@@ -161,6 +162,7 @@ namespace NovaOS.FNF
 
             audioPlayer.StopSong();
             if (beatClock != null) beatClock.StopClock();
+            if (chartEventRouter != null) chartEventRouter.StopEvents();
             playing = false;
             paused = false;
             if (pausePanel != null) pausePanel.SetActive(false);
@@ -253,6 +255,7 @@ namespace NovaOS.FNF
             }
 
             if (beatClock != null) beatClock.StartClock(chartIndex);
+            if (chartEventRouter != null) chartEventRouter.StartEvents(chartIndex);
             if (pausePanel != null) pausePanel.SetActive(false);
         }
 
@@ -323,6 +326,7 @@ namespace NovaOS.FNF
             countdownActive = false;
             if (audioPlayer != null) audioPlayer.StopSong();
             if (beatClock != null) beatClock.StopClock();
+            if (chartEventRouter != null) chartEventRouter.StopEvents();
             StartSong();
         }
 
@@ -534,6 +538,7 @@ namespace NovaOS.FNF
             paused = false;
             if (audioPlayer != null) audioPlayer.StopSong();
             if (beatClock != null) beatClock.StopClock();
+            if (chartEventRouter != null) chartEventRouter.StopEvents();
             ClearNotes();
             string recordSongId = selectedSongId + "-" + selectedVariationId;
             if (saveManager != null)
