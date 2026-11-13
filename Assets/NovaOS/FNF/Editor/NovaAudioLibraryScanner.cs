@@ -9,14 +9,15 @@ using UnityEngine;
 
 namespace NovaOS.FNF.Editor
 {
+    /// <summary>
+    /// Recursively scans imported audio clips, including the official FNF
+    /// songs/<songId>/Inst[-variation].ogg and Voices-<character>[-variation].ogg layout.
+    /// </summary>
     public static class NovaAudioLibraryScanner
     {
         private const string AudioRoot = "Assets/NovaOS/AudioLibrary";
         private const string GeneratedFolder = "Assets/NovaOS/Generated";
         private const string CatalogPath = GeneratedFolder + "/NovaAudioCatalog.asset";
-
-        private static readonly string[] InstrumentalTokens = { "inst", "instrumental", "instrumentals" };
-        private static readonly string[] VocalTokens = { "voices", "voice", "vocals", "vocal" };
 
         [MenuItem("NovaOS/FNF/Audio Library/Scan and Build Catalog")]
         public static void ScanAndBuild()
@@ -57,10 +58,11 @@ namespace NovaOS.FNF.Editor
                     continue;
                 }
 
+                string songId;
+                string variationId;
                 string characterId;
-                string songId = StripRoleSuffix(fileName, out AudioRole role, out characterId);
-                if (string.IsNullOrEmpty(songId) && role != AudioRole.Unknown)
-                    songId = GetSongFolderName(path);
+                AudioRole role;
+                ParseTrackName(fileName, path, out songId, out variationId, out characterId, out role);
 
                 if (string.IsNullOrEmpty(songId))
                 {
@@ -68,28 +70,27 @@ namespace NovaOS.FNF.Editor
                     continue;
                 }
 
-                string normalizedId = NovaAudioCatalog.NormalizeId(songId);
-                if (!songMap.TryGetValue(normalizedId, out MutableSong song))
+                songId = NovaAudioCatalog.NormalizeId(songId);
+                variationId = NovaAudioCatalog.NormalizeId(variationId);
+                if (string.IsNullOrEmpty(variationId)) variationId = "default";
+
+                string mapKey = songId + "|" + variationId;
+                if (!songMap.TryGetValue(mapKey, out MutableSong song))
                 {
                     song = new MutableSong();
-                    song.id = normalizedId;
-                    songMap.Add(normalizedId, song);
+                    song.id = songId;
+                    song.variationId = variationId;
+                    songMap.Add(mapKey, song);
                 }
 
                 if (role == AudioRole.Instrumental)
                 {
                     if (song.instrumental == null) song.instrumental = clip;
-                    else warnings.Add("Duplicate instrumental for '" + song.id + "': " + path);
+                    else warnings.Add("Duplicate instrumental for '" + song.id + "' variation '" + song.variationId + "': " + path);
                 }
                 else if (role == AudioRole.Vocals)
                 {
                     AddVoiceTrack(song, characterId, clip, path, warnings);
-                }
-                else
-                {
-                    // A plain filename is treated as the instrumental by default.
-                    if (song.instrumental == null) song.instrumental = clip;
-                    else warnings.Add("Extra unclassified audio for '" + song.id + "': " + path);
                 }
             }
 
@@ -103,9 +104,11 @@ namespace NovaOS.FNF.Editor
 
             var songs = songMap.Values
                 .OrderBy(s => s.id, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(s => s.variationId, StringComparer.OrdinalIgnoreCase)
                 .Select(s => new NovaAudioCatalog.SongAudio
                 {
                     songId = s.id,
+                    variationId = s.variationId,
                     instrumental = s.instrumental,
                     vocals = s.defaultVocals != null ? s.defaultVocals : s.firstVoice
                 }).ToList();
@@ -113,14 +116,17 @@ namespace NovaOS.FNF.Editor
             var voices = new List<NovaAudioCatalog.VoiceAudio>();
             foreach (MutableSong song in songMap.Values)
             {
-                if (song.instrumental == null) warnings.Add("Missing instrumental: " + song.id);
-                if (song.voices.Count == 0) warnings.Add("Missing vocals: " + song.id);
+                if (song.instrumental == null)
+                    warnings.Add("Missing instrumental: " + song.id + " (" + song.variationId + ")");
+                if (song.voices.Count == 0)
+                    warnings.Add("Missing vocals: " + song.id + " (" + song.variationId + ")");
 
                 foreach (VoiceEntry voice in song.voices)
                 {
                     voices.Add(new NovaAudioCatalog.VoiceAudio
                     {
                         songId = song.id,
+                        variationId = song.variationId,
                         characterId = voice.characterId,
                         clip = voice.clip
                     });
@@ -132,7 +138,9 @@ namespace NovaOS.FNF.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            string report = "Songs indexed: " + songs.Count +
+            int distinctSongs = songMap.Values.Select(s => s.id).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+            string report = "Songs indexed: " + distinctSongs +
+                "\nSong variations indexed: " + songs.Count +
                 "\nCharacter vocal tracks: " + voices.Count +
                 "\nMenu tracks: " + menu.Count +
                 "\nSound effects: " + effects.Count +
@@ -146,6 +154,134 @@ namespace NovaOS.FNF.Editor
             EditorUtility.DisplayDialog("NovaOS Audio Library", report + "\n\nCatalog: " + CatalogPath, "Done");
         }
 
+        private static void ParseTrackName(
+            string fileName,
+            string assetPath,
+            out string songId,
+            out string variationId,
+            out string characterId,
+            out AudioRole role)
+        {
+            string normalized = fileName.Trim().Replace('_', '-').Replace(' ', '-');
+            string lower = normalized.ToLowerInvariant();
+            songId = "";
+            variationId = "default";
+            characterId = "default";
+            role = AudioRole.Unknown;
+
+            // Official folder layout: Inst.ogg or Inst-erect.ogg inside <songId>.
+            if (lower == "inst" || lower == "instrumental" || lower == "instrumentals")
+            {
+                role = AudioRole.Instrumental;
+                songId = GetSongFolderName(assetPath);
+                return;
+            }
+
+            if (lower.StartsWith("inst-", StringComparison.Ordinal) ||
+                lower.StartsWith("instrumental-", StringComparison.Ordinal))
+            {
+                role = AudioRole.Instrumental;
+                int dash = normalized.IndexOf('-');
+                variationId = normalized.Substring(dash + 1);
+                if (lower.StartsWith("instrumental-", StringComparison.Ordinal))
+                    variationId = normalized.Substring("instrumental-".Length);
+                songId = GetSongFolderName(assetPath);
+                return;
+            }
+
+            // Official folder layout: Voices-bf.ogg or Voices-bf-erect.ogg.
+            if (lower == "voices" || lower == "voice" || lower == "vocals" || lower == "vocal")
+            {
+                role = AudioRole.Vocals;
+                songId = GetSongFolderName(assetPath);
+                return;
+            }
+
+            if (lower.StartsWith("voices-", StringComparison.Ordinal) ||
+                lower.StartsWith("voice-", StringComparison.Ordinal) ||
+                lower.StartsWith("vocals-", StringComparison.Ordinal) ||
+                lower.StartsWith("vocal-", StringComparison.Ordinal))
+            {
+                role = AudioRole.Vocals;
+                int dash = normalized.IndexOf('-');
+                string remainder = normalized.Substring(dash + 1);
+                SplitCharacterVariation(remainder, out characterId, out variationId);
+                songId = GetSongFolderName(assetPath);
+                return;
+            }
+
+            // Flat or named-file layout: songId-Inst[-variation].ogg.
+            string[] instrumentalMarkers = { "-instrumental-", "-inst-" };
+            for (int i = 0; i < instrumentalMarkers.Length; i++)
+            {
+                int marker = lower.LastIndexOf(instrumentalMarkers[i], StringComparison.Ordinal);
+                if (marker >= 0 && marker + instrumentalMarkers[i].Length < normalized.Length)
+                {
+                    role = AudioRole.Instrumental;
+                    songId = normalized.Substring(0, marker);
+                    variationId = normalized.Substring(marker + instrumentalMarkers[i].Length);
+                    return;
+                }
+            }
+
+            if (lower.EndsWith("-instrumental", StringComparison.Ordinal) ||
+                lower.EndsWith("-instrumentals", StringComparison.Ordinal) ||
+                lower.EndsWith("-inst", StringComparison.Ordinal))
+            {
+                role = AudioRole.Instrumental;
+                int marker = lower.LastIndexOf("-inst", StringComparison.Ordinal);
+                if (marker < 0) marker = lower.LastIndexOf("-instrumental", StringComparison.Ordinal);
+                songId = normalized.Substring(0, marker);
+                return;
+            }
+
+            // Flat layout: songId-Voices[-character][-variation].ogg.
+            string[] vocalMarkers = { "-voices-", "-voice-", "-vocals-", "-vocal-" };
+            for (int i = 0; i < vocalMarkers.Length; i++)
+            {
+                int marker = lower.LastIndexOf(vocalMarkers[i], StringComparison.Ordinal);
+                if (marker >= 0)
+                {
+                    role = AudioRole.Vocals;
+                    songId = normalized.Substring(0, marker);
+                    string remainder = normalized.Substring(marker + vocalMarkers[i].Length);
+                    if (!string.IsNullOrEmpty(remainder))
+                        SplitCharacterVariation(remainder, out characterId, out variationId);
+                    return;
+                }
+            }
+
+            if (lower.EndsWith("-voices", StringComparison.Ordinal) ||
+                lower.EndsWith("-voice", StringComparison.Ordinal) ||
+                lower.EndsWith("-vocals", StringComparison.Ordinal) ||
+                lower.EndsWith("-vocal", StringComparison.Ordinal))
+            {
+                role = AudioRole.Vocals;
+                int marker = lower.LastIndexOf("-voices", StringComparison.Ordinal);
+                if (marker < 0) marker = lower.LastIndexOf("-voice", StringComparison.Ordinal);
+                if (marker < 0) marker = lower.LastIndexOf("-vocals", StringComparison.Ordinal);
+                if (marker < 0) marker = lower.LastIndexOf("-vocal", StringComparison.Ordinal);
+                songId = normalized.Substring(0, marker);
+                return;
+            }
+
+            // Plain files still work as instrumentals. Their filename supplies the song ID.
+            role = AudioRole.Instrumental;
+            songId = normalized;
+        }
+
+        private static void SplitCharacterVariation(string value, out string characterId, out string variationId)
+        {
+            characterId = value;
+            variationId = "default";
+            int lastDash = value.LastIndexOf('-');
+            if (lastDash > 0 && lastDash < value.Length - 1)
+            {
+                characterId = value.Substring(0, lastDash);
+                variationId = value.Substring(lastDash + 1);
+            }
+        }
+
         private static void AddVoiceTrack(MutableSong song, string characterId, AudioClip clip, string path, List<string> warnings)
         {
             string normalizedCharacter = NovaAudioCatalog.NormalizeId(characterId);
@@ -155,7 +291,8 @@ namespace NovaOS.FNF.Editor
             {
                 if (song.voices[i].characterId == normalizedCharacter)
                 {
-                    warnings.Add("Duplicate vocal track for '" + song.id + "' character '" + normalizedCharacter + "': " + path);
+                    warnings.Add("Duplicate vocal track for '" + song.id + "' variation '" +
+                        song.variationId + "' character '" + normalizedCharacter + "': " + path);
                     return;
                 }
             }
@@ -196,68 +333,6 @@ namespace NovaOS.FNF.Editor
             return "";
         }
 
-        private static string StripRoleSuffix(string fileName, out AudioRole role, out string characterId)
-        {
-            string normalized = fileName.Trim().Replace('_', '-').Replace(' ', '-');
-            string lower = normalized.ToLowerInvariant();
-            characterId = "default";
-
-            for (int i = 0; i < InstrumentalTokens.Length; i++)
-            {
-                string token = InstrumentalTokens[i];
-                string suffix = "-" + token;
-                if (lower == token)
-                {
-                    role = AudioRole.Instrumental;
-                    return "";
-                }
-                if (lower.EndsWith(suffix, StringComparison.Ordinal))
-                {
-                    role = AudioRole.Instrumental;
-                    return normalized.Substring(0, normalized.Length - suffix.Length);
-                }
-            }
-
-            // Official FNF song folders can contain Voices-bf.ogg, Voices-pico.ogg, etc.
-            // Also support SongName-Voices-bf.ogg.
-            for (int i = 0; i < VocalTokens.Length; i++)
-            {
-                string token = VocalTokens[i];
-                string prefix = token + "-";
-                string suffix = "-" + token + "-";
-
-                if (lower.StartsWith(prefix, StringComparison.Ordinal))
-                {
-                    role = AudioRole.Vocals;
-                    characterId = normalized.Substring(prefix.Length);
-                    return "";
-                }
-
-                int suffixIndex = lower.LastIndexOf(suffix, StringComparison.Ordinal);
-                if (suffixIndex >= 0 && suffixIndex + suffix.Length < normalized.Length)
-                {
-                    role = AudioRole.Vocals;
-                    characterId = normalized.Substring(suffixIndex + suffix.Length);
-                    return normalized.Substring(0, suffixIndex);
-                }
-
-                string plainSuffix = "-" + token;
-                if (lower == token)
-                {
-                    role = AudioRole.Vocals;
-                    return "";
-                }
-                if (lower.EndsWith(plainSuffix, StringComparison.Ordinal))
-                {
-                    role = AudioRole.Vocals;
-                    return normalized.Substring(0, normalized.Length - plainSuffix.Length);
-                }
-            }
-
-            role = AudioRole.Unknown;
-            return normalized;
-        }
-
         private static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path)) return;
@@ -272,6 +347,7 @@ namespace NovaOS.FNF.Editor
         private sealed class MutableSong
         {
             public string id;
+            public string variationId;
             public AudioClip instrumental;
             public AudioClip defaultVocals;
             public AudioClip firstVoice;
