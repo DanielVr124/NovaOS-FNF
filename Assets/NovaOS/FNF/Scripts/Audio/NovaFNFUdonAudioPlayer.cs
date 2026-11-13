@@ -30,6 +30,7 @@ namespace NovaOS.FNF
         [Range(0f, 0.5f)] public float vocalResyncThreshold = 0.12f;
 
         public string currentSongId = "";
+        public string currentVariationId = "default";
         public string selectedVocalCharacterId = "bf";
         public string selectedOpponentVocalCharacterId = "dad";
         public bool songLoaded;
@@ -74,10 +75,20 @@ namespace NovaOS.FNF
 
         public bool PlaySong(string songId)
         {
-            return PlaySongFromTime(songId, 0f);
+            return PlaySong(songId, "default");
+        }
+
+        public bool PlaySong(string songId, string variationId)
+        {
+            return PlaySongFromTime(songId, variationId, 0f);
         }
 
         public bool PlaySongFromTime(string songId, float startSeconds)
+        {
+            return PlaySongFromTime(songId, "default", startSeconds);
+        }
+
+        public bool PlaySongFromTime(string songId, string variationId, float startSeconds)
         {
             if (audioBank == null || instrumentalSource == null)
             {
@@ -85,7 +96,7 @@ namespace NovaOS.FNF
                 return false;
             }
 
-            int index = audioBank.FindSongIndex(songId);
+            int index = audioBank.FindSongIndex(songId, variationId);
             if (index < 0 || audioBank.instrumentals == null || index >= audioBank.instrumentals.Length)
             {
                 Debug.LogWarning("No instrumental audio was indexed for song: " + songId);
@@ -105,7 +116,7 @@ namespace NovaOS.FNF
             instrumentalSource.volume = instrumentalVolume;
             instrumentalSource.loop = false;
 
-            AudioClip vocal = audioBank.GetVoiceClip(songId, selectedVocalCharacterId);
+            AudioClip vocal = audioBank.GetVoiceClip(songId, selectedVocalCharacterId, variationId);
             if (vocal == null && audioBank.vocals != null && index < audioBank.vocals.Length)
                 vocal = audioBank.vocals[index];
 
@@ -116,7 +127,7 @@ namespace NovaOS.FNF
                 vocalsSource.loop = false;
             }
 
-            AudioClip opponentVocal = audioBank.GetVoiceClip(songId, selectedOpponentVocalCharacterId);
+            AudioClip opponentVocal = audioBank.GetVoiceClip(songId, selectedOpponentVocalCharacterId, variationId);
             // A legacy combined Voices.ogg may be returned as the default for both
             // characters. Play that combined stem once instead of duplicating it.
             if (opponentVocal == vocal) opponentVocal = null;
@@ -142,6 +153,7 @@ namespace NovaOS.FNF
                 opponentVocalsSource.Play();
 
             currentSongId = songId;
+            currentVariationId = variationId;
             songLoaded = true;
             songPaused = false;
             return true;
@@ -174,6 +186,7 @@ namespace NovaOS.FNF
             songLoaded = false;
             songPaused = false;
             currentSongId = "";
+            currentVariationId = "default";
         }
 
         private void ResyncVoiceSource(AudioSource voiceSource)
@@ -212,8 +225,13 @@ namespace NovaOS.FNF
 
         public void PlaySongPreview(string songId, float startSeconds, float endSeconds)
         {
+            PlaySongPreview(songId, "default", startSeconds, endSeconds);
+        }
+
+        public void PlaySongPreview(string songId, string variationId, float startSeconds, float endSeconds)
+        {
             if (audioBank == null || previewSource == null) return;
-            int index = audioBank.FindSongIndex(songId);
+            int index = audioBank.FindSongIndex(songId, variationId);
             if (index < 0 || audioBank.instrumentals == null ||
                 index >= audioBank.instrumentals.Length || audioBank.instrumentals[index] == null)
                 return;
