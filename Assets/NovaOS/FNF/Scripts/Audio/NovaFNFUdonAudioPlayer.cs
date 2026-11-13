@@ -117,6 +117,9 @@ namespace NovaOS.FNF
             }
 
             AudioClip opponentVocal = audioBank.GetVoiceClip(songId, selectedOpponentVocalCharacterId);
+            // A legacy combined Voices.ogg may be returned as the default for both
+            // characters. Play that combined stem once instead of duplicating it.
+            if (opponentVocal == vocal) opponentVocal = null;
             if (opponentVocalsSource != null)
             {
                 opponentVocalsSource.clip = opponentVocal;
@@ -254,6 +257,8 @@ namespace NovaOS.FNF
 
             if (activeMenuSource == null) activeMenuSource = menuMusicSource;
             if (activeMenuSource.clip == clip && activeMenuSource.isPlaying) return;
+            if (menuFadeActive && incomingMenuSource != null &&
+                incomingMenuSource.clip == clip && incomingMenuSource.isPlaying) return;
 
             if (menuMusicSecondarySource == null || menuMusicFadeSeconds <= 0f)
             {
