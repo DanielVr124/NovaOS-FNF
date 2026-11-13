@@ -319,6 +319,9 @@ namespace NovaOS.FNF
 
         private void ShowScreen(int screenIndex, bool pushHistory)
         {
+            if (screenIndex != freeplayScreenIndex && menuAudioPlayer != null)
+                menuAudioPlayer.StopSongPreview();
+
             if (screens == null || screenIndex < 0 || screenIndex >= screens.Length) return;
             if (pushHistory && currentScreenIndex >= 0 && currentScreenIndex != screenIndex && historyCount < screenHistory.Length)
             {
