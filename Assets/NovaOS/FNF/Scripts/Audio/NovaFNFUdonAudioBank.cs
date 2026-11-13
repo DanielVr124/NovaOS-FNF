@@ -33,6 +33,23 @@ namespace NovaOS.FNF
             return FindSongIndex(id, "default");
         }
 
+        // Exact lookup is used by validation so a missing remix instrumental
+        // cannot be hidden by the runtime's intentional default-audio fallback.
+        public int FindExactSongIndex(string id, string variationId)
+        {
+            string wantedSong = NormalizeId(id);
+            string wantedVariation = NormalizeId(variationId);
+            if (songIds == null) return -1;
+
+            for (int i = 0; i < songIds.Length; i++)
+            {
+                string variation = songVariationIds != null && i < songVariationIds.Length
+                    ? NormalizeId(songVariationIds[i]) : "default";
+                if (NormalizeId(songIds[i]) == wantedSong && variation == wantedVariation) return i;
+            }
+            return -1;
+        }
+
         public int FindSongIndex(string id, string variationId)
         {
             string wantedSong = NormalizeId(id);
