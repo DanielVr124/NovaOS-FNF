@@ -18,6 +18,32 @@ namespace NovaOS.FNF
 
         private int capturingIndex = -1;
 
+        private void Start()
+        {
+            if (assignableKeys == null || assignableKeys.Length == 0)
+            {
+                assignableKeys = new KeyCode[]
+                {
+                    KeyCode.A, KeyCode.B, KeyCode.C, KeyCode.D, KeyCode.E,
+                    KeyCode.F, KeyCode.G, KeyCode.H, KeyCode.I, KeyCode.J,
+                    KeyCode.K, KeyCode.L, KeyCode.M, KeyCode.N, KeyCode.O,
+                    KeyCode.P, KeyCode.Q, KeyCode.R, KeyCode.S, KeyCode.T,
+                    KeyCode.U, KeyCode.V, KeyCode.W, KeyCode.X, KeyCode.Y, KeyCode.Z,
+                    KeyCode.Alpha0, KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3,
+                    KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7,
+                    KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.LeftArrow, KeyCode.DownArrow,
+                    KeyCode.UpArrow, KeyCode.RightArrow, KeyCode.Return, KeyCode.KeypadEnter,
+                    KeyCode.Space, KeyCode.Tab, KeyCode.Backspace, KeyCode.LeftShift,
+                    KeyCode.RightShift, KeyCode.LeftControl, KeyCode.RightControl,
+                    KeyCode.LeftAlt, KeyCode.RightAlt, KeyCode.Comma, KeyCode.Period,
+                    KeyCode.Slash, KeyCode.Semicolon, KeyCode.Quote, KeyCode.LeftBracket,
+                    KeyCode.RightBracket, KeyCode.Minus, KeyCode.Equals
+                };
+            }
+
+            RefreshLabels();
+        }
+
         private void Update()
         {
             if (capturingIndex < 0 || assignableKeys == null) return;
