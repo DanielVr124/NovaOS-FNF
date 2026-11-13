@@ -14,6 +14,9 @@ namespace NovaOS.FNF
         public string[] songIds;
         public AudioClip[] instrumentals;
         public AudioClip[] vocals;
+        public string[] voiceSongIds;
+        public string[] voiceCharacterIds;
+        public AudioClip[] voiceClips;
 
         [Header("Menu Music")]
         public string[] menuMusicIds;
@@ -33,6 +36,35 @@ namespace NovaOS.FNF
                 if (NormalizeId(songIds[i]) == wanted) return i;
             }
             return -1;
+        }
+
+        public int FindVoiceIndex(string songId, string characterId)
+        {
+            string wantedSong = NormalizeId(songId);
+            string wantedCharacter = NormalizeId(characterId);
+            if (voiceSongIds == null || voiceCharacterIds == null) return -1;
+
+            for (int i = 0; i < voiceSongIds.Length; i++)
+            {
+                if (i >= voiceCharacterIds.Length) break;
+                if (NormalizeId(voiceSongIds[i]) == wantedSong &&
+                    NormalizeId(voiceCharacterIds[i]) == wantedCharacter)
+                    return i;
+            }
+            return -1;
+        }
+
+        public AudioClip GetVoiceClip(string songId, string characterId)
+        {
+            int index = FindVoiceIndex(songId, characterId);
+            if (index >= 0 && voiceClips != null && index < voiceClips.Length)
+                return voiceClips[index];
+
+            int defaultIndex = FindVoiceIndex(songId, "default");
+            if (defaultIndex >= 0 && voiceClips != null && defaultIndex < voiceClips.Length)
+                return voiceClips[defaultIndex];
+
+            return null;
         }
 
         public int FindMenuMusicIndex(string id)
