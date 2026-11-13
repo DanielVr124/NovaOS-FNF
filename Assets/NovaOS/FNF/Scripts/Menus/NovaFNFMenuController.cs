@@ -443,7 +443,7 @@ namespace NovaOS.FNF
 
             if (previewChartBank == null || previewChartBank.songIds == null)
             {
-                if (menuAudioPlayer != null) menuAudioPlayer.PlaySongPreview(action.songId, 0f, 0f);
+                if (menuAudioPlayer != null) menuAudioPlayer.PlaySongPreview(action.songId, action.variationId, 0f, 0f);
                 return;
             }
 
@@ -459,7 +459,7 @@ namespace NovaOS.FNF
                 float end = previewChartBank.previewEndSeconds != null && i < previewChartBank.previewEndSeconds.Length
                     ? previewChartBank.previewEndSeconds[i] : 0f;
                 if (menuAudioPlayer != null)
-                    menuAudioPlayer.PlaySongPreview(action.songId, start, end);
+                    menuAudioPlayer.PlaySongPreview(action.songId, action.variationId, start, end);
                 return;
             }
 
