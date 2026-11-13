@@ -1,0 +1,327 @@
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using NovaOS.FNF;
+using UdonSharpEditor;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+namespace NovaOS.FNF.Editor
+{
+    /// <summary>
+    /// Creates the starter prefab and test scene. Layout values are based on the
+    /// current official Funkin source (1280x720 reference canvas; 160px main-menu
+    /// item spacing; HUD health bar at 90% screen height; opponent/player strumlines
+    /// on left/right halves). It is a setup scaffold, not a claim of pixel-perfect
+    /// parity or complete gameplay until imported content and Udon are tested.
+    /// </summary>
+    public static class NovaFNFSceneBuilder
+    {
+        private const string Root = "Assets/NovaOS";
+        private const string PrefabFolder = Root + "/Prefabs";
+        private const string SceneFolder = Root + "/Scenes";
+        private const string PrefabPath = PrefabFolder + "/NovaFNF_Game.prefab";
+        private const string ScenePath = SceneFolder + "/NovaFNF_TestScene.unity";
+        private const float RefWidth = 1280f;
+        private const float RefHeight = 720f;
+
+        [MenuItem("NovaOS/FNF/Setup/Create Drag-and-Drop Game and Test Scene")]
+        public static void Build()
+        {
+            EnsureFolder("Assets", "NovaOS");
+            EnsureFolder(Root, "Prefabs");
+            EnsureFolder(Root, "Scenes");
+
+            GameObject root = BuildRoot();
+            PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+            Object.DestroyImmediate(root);
+
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath), scene);
+            instance.name = "NovaFNF_Game";
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            EditorUtility.DisplayDialog("NovaOS FNF Setup",
+                "Created:\n" + PrefabPath + "\n\n" + ScenePath +
+                "\n\nOpen the test scene. The layout and systems are preassembled; assign/imported content and UdonSharp compilation still need validation.",
+                "Open Test Scene");
+            EditorSceneManager.OpenScene(ScenePath);
+        }
+
+        [MenuItem("NovaOS/FNF/Setup/Rebuild Drag-and-Drop Game and Test Scene")]
+        public static void Rebuild() { Build(); }
+
+        private static GameObject BuildRoot()
+        {
+            GameObject root = new GameObject("NovaFNF_Game");
+            GameObject systems = Child(root.transform, "Systems");
+            GameObject ui = Child(root.transform, "UI");
+            GameObject gameplay = Child(root.transform, "Gameplay");
+
+            // Core Udon systems. References are wired below.
+            var chartBank = Add<NovaFNFChartBank>(systems);
+            var audioBank = Add<NovaFNFUdonAudioBank>(systems);
+            var audioPlayer = Add<NovaFNFUdonAudioPlayer>(systems);
+            var beatClock = Add<NovaFNFBeatClock>(systems);
+            var eventRouter = Add<NovaFNFChartEventRouter>(systems);
+            var input = Add<NovaFNFInputBindings>(systems);
+            var saves = Add<NovaFNFSaveManager>(systems);
+            var story = Add<NovaFNFStoryProgression>(systems);
+            var results = Add<NovaFNFResultsController>(systems);
+            var menu = Add<NovaFNFMenuController>(systems);
+
+            // World-space 16:9 canvas, with a 1280x720 reference coordinate system.
+            GameObject canvasGo = Child(ui.transform, "FNF Canvas (1280x720 Reference)");
+            Canvas canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvasGo.AddComponent<CanvasScaler>().dynamicPixelsPerUnit = 100f;
+            canvasGo.AddComponent<GraphicRaycaster>();
+            RectTransform canvasRect = canvasGo.GetComponent<RectTransform>();
+            canvasRect.sizeDelta = new Vector2(RefWidth, RefHeight);
+            canvasRect.localScale = Vector3.one * 0.01f;
+            canvasRect.localPosition = new Vector3(0, 0, 0);
+            canvasRect.localRotation = Quaternion.Euler(0, 180, 0);
+
+            GameObject eventSystem = new GameObject("EventSystem");
+            eventSystem.transform.SetParent(root.transform, false);
+            eventSystem.AddComponent<EventSystem>();
+            eventSystem.AddComponent<StandaloneInputModule>();
+
+            // Screen panels use the same source-game reference resolution.
+            string[] screenNames = { "Title", "Main Menu", "Story Mode", "Freeplay", "Options",
+                "Controls", "Audio Options", "Accessibility", "Gameplay", "Results", "Difficulty Select" };
+            GameObject[] screens = new GameObject[screenNames.Length];
+            for (int i = 0; i < screenNames.Length; i++)
+            {
+                screens[i] = Panel(canvasRect, screenNames[i], i == 0);
+                if (i == 0) AddText(screens[i].transform, "Press Enter to Begin", new Vector2(0, -260), 42, TextAnchor.MiddleCenter);
+            }
+
+            // Main menu: source positions are centered with 160px vertical spacing.
+            string[] mainLabels = { "STORY MODE", "FREEPLAY", "OPTIONS", "CREDITS" };
+            var mainActions = new List<NovaFNFMenuAction>();
+            for (int i = 0; i < mainLabels.Length; i++)
+            {
+                float y = (RefHeight - (160f * (mainLabels.Length - 1))) * 0.5f - i * 160f;
+                GameObject item = Button(screens[1].transform, mainLabels[i], new Vector2(0, y), new Vector2(430, 88), 48);
+                var action = Add<NovaFNFMenuAction>(item);
+                action.menuController = menu;
+                action.actionId = i == 0 ? 0 : i == 1 ? 1 : i == 2 ? 2 : 3;
+                action.selectableButton = item.GetComponent<Button>();
+                item.GetComponent<Button>().onClick.AddListener(action.OnButtonPressed);
+                mainActions.Add(action);
+            }
+
+            // Story/freeplay/options content panels are deliberately simple but functional UI roots.
+            AddText(screens[2].transform, "STORY MODE", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            AddText(screens[2].transform, "Import official level data to populate this list", Vector2.zero, 26, TextAnchor.MiddleCenter);
+            AddText(screens[3].transform, "FREEPLAY", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            AddText(screens[3].transform, "Import official chart data to populate songs", Vector2.zero, 26, TextAnchor.MiddleCenter);
+            AddText(screens[4].transform, "OPTIONS", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            AddText(screens[5].transform, "CONTROLS", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            AddText(screens[6].transform, "AUDIO OPTIONS", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            AddText(screens[7].transform, "ACCESSIBILITY", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            AddText(screens[9].transform, "RESULTS", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+            AddText(screens[10].transform, "SELECT DIFFICULTY", new Vector2(0, 260), 52, TextAnchor.MiddleCenter);
+
+            // Gameplay HUD. Official source positions player strumline on the right,
+            // opponent on the left, health bar centered at 90% height (upscroll).
+            GameObject hud = Child(screens[8].transform, "HUD");
+            AddText(hud.transform, "SCORE: 0", new Vector2(420, -285), 25, TextAnchor.MiddleRight);
+            Image healthBg = RectImage(hud.transform, "Health Bar Background", new Vector2(0, -288), new Vector2(520, 28), new Color(0.05f,0.05f,0.05f,0.95f));
+            Image healthFill = RectImage(healthBg.transform, "Health Fill", Vector2.zero, new Vector2(512, 20), new Color(0.2f,0.9f,0.35f,1f));
+            healthFill.type = Image.Type.Filled;
+            healthFill.fillMethod = Image.FillMethod.Horizontal;
+            healthFill.fillAmount = 0.5f;
+            var laneReceptors = new Transform[4];
+            var opponentReceptors = new Transform[4];
+            var pool = new List<NovaFNFNoteView>();
+            for (int side = 0; side < 2; side++)
+            {
+                GameObject field = Child(gameplay.transform, side == 0 ? "Opponent Strumline (Left)" : "Player Strumline (Right)");
+                field.transform.SetParent(hud.transform, false);
+                float centerX = side == 0 ? -300f : 300f;
+                for (int lane = 0; lane < 4; lane++)
+                {
+                    float x = centerX + (lane - 1.5f) * 82f;
+                    GameObject receptor = RectImage(field.transform, "Receptor " + lane,
+                        new Vector2(x, 205), new Vector2(68, 68), LaneColor(lane)).gameObject;
+                    if (side == 1) laneReceptors[lane] = receptor.transform;
+                    else opponentReceptors[lane] = receptor.transform;
+                }
+            }
+
+            // Prewarmed pooled note views; runtime controller reuses rather than instantiating.
+            GameObject notePoolRoot = Child(gameplay.transform, "Pooled Notes");
+            notePoolRoot.transform.SetParent(hud.transform, false);
+            for (int i = 0; i < 48; i++)
+            {
+                GameObject note = RectImage(notePoolRoot.transform, "Note " + i, Vector2.zero, new Vector2(58,58), Color.white).gameObject;
+                var view = Add<NovaFNFNoteView>(note);
+                view.noteVisual = note;
+                view.noteImage = note.GetComponent<Image>();
+                view.noteLabel = AddText(note.transform, "↑", Vector2.zero, 34, TextAnchor.MiddleCenter);
+                note.SetActive(false);
+                pool.Add(view);
+            }
+
+            GameObject judgement = Child(hud.transform, "Judgement Popup");
+            Text judgementText = AddText(judgement.transform, "Sick!", new Vector2(0, 20), 38, TextAnchor.MiddleCenter);
+            var popup = Add<NovaFNFJudgementPopup>(judgement);
+            popup.root = judgement;
+            popup.judgementText = judgementText;
+            judgement.SetActive(false);
+
+            // Audio source bank.
+            AudioSource inst = Source(systems, "Instrumental");
+            AudioSource vocals = Source(systems, "Player Vocals");
+            AudioSource opponentVocals = Source(systems, "Opponent Vocals");
+            AudioSource menuMusic = Source(systems, "Menu Music");
+            AudioSource menuMusicB = Source(systems, "Menu Music Crossfade");
+            AudioSource preview = Source(systems, "Song Preview");
+            AudioSource sfx = Source(systems, "UI and Gameplay SFX");
+            audioPlayer.audioBank = audioBank;
+            audioPlayer.instrumentalSource = inst;
+            audioPlayer.vocalsSource = vocals;
+            audioPlayer.opponentVocalsSource = opponentVocals;
+            audioPlayer.menuMusicSource = menuMusic;
+            audioPlayer.menuMusicSecondarySource = menuMusicB;
+            audioPlayer.previewSource = preview;
+            audioPlayer.soundEffectSource = sfx;
+
+            beatClock.chartBank = chartBank;
+            beatClock.audioPlayer = audioPlayer;
+            eventRouter.chartBank = chartBank;
+            eventRouter.audioPlayer = audioPlayer;
+
+            var game = Add<NovaFNFGameplayController>(gameplay);
+            game.chartBank = chartBank;
+            game.audioPlayer = audioPlayer;
+            game.menuController = menu;
+            game.resultsController = results;
+            game.storyProgression = story;
+            game.beatClock = beatClock;
+            game.chartEventRouter = eventRouter;
+            game.inputBindings = input;
+            game.saveManager = saves;
+            game.laneReceptors = laneReceptors;
+            game.notePool = pool.ToArray();
+            game.judgementPopup = popup;
+            game.healthFill = healthFill;
+
+            menu.screens = screens;
+            menu.menuAudioPlayer = audioPlayer;
+            menu.previewChartBank = chartBank;
+            menu.gameplayController = game;
+            menu.inputBindings = input;
+            menu.storyProgression = story;
+            menu.titleScreenIndex = 0;
+            menu.mainMenuScreenIndex = 1;
+            menu.storyModeScreenIndex = 2;
+            menu.freeplayScreenIndex = 3;
+            menu.optionsScreenIndex = 4;
+            menu.controlsScreenIndex = 5;
+            menu.audioOptionsScreenIndex = 6;
+            menu.accessibilityScreenIndex = 7;
+            menu.gameplayScreenIndex = 8;
+            menu.resultsScreenIndex = 9;
+            menu.difficultySelectScreenIndex = 10;
+            menu.mainMenuActions = mainActions.ToArray();
+            story.menuController = menu;
+
+            // Hide every screen except title at authoring time.
+            for (int i = 0; i < screens.Length; i++) screens[i].SetActive(i == 0);
+            return root;
+        }
+
+        private static T Add<T>(GameObject go) where T : UdonSharp.UdonSharpBehaviour
+        {
+            return UdonSharpUndo.AddComponent<T>(go);
+        }
+
+        private static GameObject Child(Transform parent, string name)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            return go;
+        }
+
+        private static GameObject Panel(RectTransform parent, string name, bool active)
+        {
+            GameObject panel = Child(parent, name);
+            RectTransform rt = panel.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+            panel.SetActive(active);
+            return panel;
+        }
+
+        private static Text AddText(Transform parent, string value, Vector2 pos, int size, TextAnchor align)
+        {
+            GameObject go = Child(parent, value);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = new Vector2(1000, 90);
+            Text t = go.AddComponent<Text>();
+            t.text = value; t.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            t.fontSize = size; t.alignment = align; t.color = Color.white;
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.verticalOverflow = VerticalWrapMode.Overflow;
+            return t;
+        }
+
+        private static GameObject Button(Transform parent, string label, Vector2 pos, Vector2 size, int fontSize)
+        {
+            GameObject go = RectImage(parent, label, pos, size, new Color(0.02f,0.02f,0.02f,0.45f)).gameObject;
+            Button button = go.AddComponent<Button>();
+            ColorBlock cb = button.colors;
+            cb.normalColor = new Color(1,1,1,0.9f);
+            cb.highlightedColor = new Color(0.55f,0.85f,1,1);
+            button.colors = cb;
+            AddText(go.transform, label, Vector2.zero, fontSize, TextAnchor.MiddleCenter);
+            return go;
+        }
+
+        private static Image RectImage(Transform parent, string name, Vector2 pos, Vector2 size, Color color)
+        {
+            GameObject go = Child(parent, name);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f,0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+            Image img = go.AddComponent<Image>();
+            img.color = color;
+            return img;
+        }
+
+        private static Color LaneColor(int lane)
+        {
+            if (lane == 0) return new Color(0.25f,0.72f,1f,1f);
+            if (lane == 1) return new Color(0.35f,0.95f,0.45f,1f);
+            if (lane == 2) return new Color(0.95f,0.35f,0.35f,1f);
+            return new Color(0.9f,0.45f,1f,1f);
+        }
+
+        private static AudioSource Source(GameObject parent, string name)
+        {
+            GameObject go = new GameObject(name);
+            go.transform.SetParent(parent.transform, false);
+            AudioSource source = go.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.spatialBlend = 0f;
+            return source;
+        }
+
+        private static void EnsureFolder(string parent, string child)
+        {
+            string path = parent + "/" + child;
+            if (!AssetDatabase.IsValidFolder(path)) AssetDatabase.CreateFolder(parent, child);
+        }
+    }
+}
+#endif
