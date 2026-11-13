@@ -1,0 +1,388 @@
+using UdonSharp;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace NovaOS.FNF
+{
+    /// <summary>
+    /// First playable Udon gameplay loop: chart spawning, 4-lane keyboard input,
+    /// basic sustains, opponent auto-notes, judgement, health, score and results.
+    /// Assign a prewarmed pool of NovaFNFNoteView objects in the Inspector.
+    /// </summary>
+    public class NovaFNFGameplayController : UdonSharpBehaviour
+    {
+        [Header("Systems")]
+        public NovaFNFChartBank chartBank;
+        public NovaFNFUdonAudioPlayer audioPlayer;
+        public NovaFNFMenuController menuController;
+
+        [Header("Chart selection")]
+        public string selectedSongId = "tutorial";
+        public string selectedDifficultyId = "normal";
+        public bool downscroll;
+        public float spawnLeadMs = 2200f;
+        public float noteUnitsPerSecond = 2.5f;
+
+        [Header("Note field")]
+        public Transform[] laneReceptors;
+        public NovaFNFNoteView[] notePool;
+
+        [Header("Judgement windows (milliseconds)")]
+        public float sickWindowMs = 45f;
+        public float goodWindowMs = 90f;
+        public float badWindowMs = 135f;
+        public float missWindowMs = 160f;
+
+        [Header("Scoring")]
+        public int sickScore = 350;
+        public int goodScore = 200;
+        public int badScore = 50;
+        public float hitHealthGain = 0.025f;
+        public float missHealthLoss = 0.10f;
+
+        [Header("UI")]
+        public Text scoreText;
+        public Text comboText;
+        public Text missesText;
+        public Text accuracyText;
+        public Image healthFill;
+        public GameObject pausePanel;
+
+        [Header("Runtime state (read only)")]
+        public int score;
+        public int combo;
+        public int misses;
+        public float health = 1f;
+        public float accuracy;
+        public bool playing;
+        public bool paused;
+
+        private int chartIndex = -1;
+        private int chartNoteStart;
+        private int chartNoteEnd;
+        private int nextChartNote;
+        private int judgedNotes;
+        private int weightedAccuracy;
+        private bool[] laneHeld = new bool[4];
+        private NovaFNFNoteView[] heldSustainNotes = new NovaFNFNoteView[4];
+        private float lastNoteEndMs;
+
+        public void StartSong()
+        {
+            if (chartBank == null || audioPlayer == null)
+            {
+                Debug.LogError("Gameplay Controller needs a Chart Bank and Audio Player.");
+                return;
+            }
+
+            chartIndex = chartBank.FindChartIndex(selectedSongId, selectedDifficultyId);
+            if (chartIndex < 0)
+                chartIndex = chartBank.FindFirstDifficulty(selectedSongId);
+
+            if (chartIndex < 0)
+            {
+                Debug.LogWarning("No chart found for " + selectedSongId + " (" + selectedDifficultyId + ").");
+                return;
+            }
+
+            ClearNotes();
+            score = 0;
+            combo = 0;
+            misses = 0;
+            judgedNotes = 0;
+            weightedAccuracy = 0;
+            health = 1f;
+            accuracy = 100f;
+            lastNoteEndMs = 0f;
+
+            chartNoteStart = chartBank.noteStarts[chartIndex];
+            chartNoteEnd = chartNoteStart + chartBank.noteCounts[chartIndex];
+            nextChartNote = chartNoteStart;
+
+            for (int i = chartNoteStart; i < chartNoteEnd; i++)
+            {
+                float end = chartBank.noteTimesMs[i] + chartBank.sustainLengthsMs[i];
+                if (end > lastNoteEndMs) lastNoteEndMs = end;
+            }
+
+            playing = audioPlayer.PlaySong(selectedSongId);
+            paused = false;
+            if (!playing) return;
+            if (pausePanel != null) pausePanel.SetActive(false);
+            RefreshUI();
+        }
+
+        private void Update()
+        {
+            if (!playing || paused) return;
+
+            if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) HitLane(0);
+            if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) HitLane(1);
+            if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) HitLane(2);
+            if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) HitLane(3);
+
+            UpdateSustains();
+
+            float songTimeMs = audioPlayer.GetSongPositionSeconds() * 1000f;
+            SpawnUpcomingNotes(songTimeMs);
+            UpdateActiveNotes(songTimeMs);
+
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
+                PauseGame();
+
+            if (nextChartNote >= chartNoteEnd && songTimeMs > lastNoteEndMs + 1800f)
+                FinishSong();
+        }
+
+        public void HitLane(int lane)
+        {
+            if (!playing || paused || lane < 0 || lane > 3) return;
+
+            float songTimeMs = audioPlayer.GetSongPositionSeconds() * 1000f;
+            NovaFNFNoteView bestNote = null;
+            float bestDifference = 999999f;
+
+            for (int i = 0; i < notePool.Length; i++)
+            {
+                NovaFNFNoteView note = notePool[i];
+                if (note == null || !note.IsActiveNote() || note.IsOpponentNote()) continue;
+                if (note.GetLane() != lane || note.IsHoldingSustain()) continue;
+
+                float difference = songTimeMs - note.GetTimeMs();
+                float absolute = Mathf.Abs(difference);
+                if (absolute <= badWindowMs && absolute < bestDifference)
+                {
+                    bestDifference = absolute;
+                    bestNote = note;
+                }
+            }
+
+            if (bestNote == null) return;
+            RegisterHit(bestNote, bestDifference);
+        }
+
+        public void PauseGame()
+        {
+            if (!playing || paused) return;
+            paused = true;
+            audioPlayer.PauseSong();
+            if (pausePanel != null) pausePanel.SetActive(true);
+        }
+
+        public void ResumeGame()
+        {
+            if (!playing || !paused) return;
+            paused = false;
+            audioPlayer.ResumeSong();
+            if (pausePanel != null) pausePanel.SetActive(false);
+        }
+
+        public void RestartSong()
+        {
+            if (audioPlayer != null) audioPlayer.StopSong();
+            StartSong();
+        }
+
+        public void ExitToMenu()
+        {
+            if (audioPlayer != null) audioPlayer.StopSong();
+            playing = false;
+            paused = false;
+            if (pausePanel != null) pausePanel.SetActive(false);
+            if (menuController != null) menuController.OpenFreeplay();
+        }
+
+        private void SpawnUpcomingNotes(float songTimeMs)
+        {
+            if (chartBank.noteTimesMs == null) return;
+
+            while (nextChartNote < chartNoteEnd &&
+                   chartBank.noteTimesMs[nextChartNote] <= songTimeMs + spawnLeadMs)
+            {
+                int direction = chartBank.noteDirections[nextChartNote];
+                if (direction >= 0 && direction < 8)
+                {
+                    NovaFNFNoteView view = GetFreeNote();
+                    if (view != null)
+                    {
+                        view.Initialize(
+                            direction,
+                            chartBank.noteTimesMs[nextChartNote],
+                            chartBank.sustainLengthsMs[nextChartNote],
+                            direction >= 4,
+                            laneReceptors);
+                    }
+                }
+                nextChartNote++;
+            }
+        }
+
+        private void UpdateActiveNotes(float songTimeMs)
+        {
+            for (int i = 0; i < notePool.Length; i++)
+            {
+                NovaFNFNoteView note = notePool[i];
+                if (note == null || !note.IsActiveNote()) continue;
+
+                note.UpdatePosition(songTimeMs, noteUnitsPerSecond, GetScrollSpeed(), downscroll);
+
+                if (note.IsOpponentNote() && songTimeMs >= note.GetTimeMs())
+                {
+                    note.Deactivate();
+                    continue;
+                }
+
+                if (!note.IsOpponentNote() && !note.IsHoldingSustain() &&
+                    songTimeMs > note.GetTimeMs() + missWindowMs)
+                    RegisterMiss(note);
+            }
+        }
+
+        private void UpdateSustains()
+        {
+            float songTimeMs = audioPlayer.GetSongPositionSeconds() * 1000f;
+            for (int lane = 0; lane < 4; lane++)
+            {
+                NovaFNFNoteView note = heldSustainNotes[lane];
+                if (note == null) continue;
+
+                bool held = IsLaneHeld(lane);
+                if (!held && songTimeMs < note.GetSustainEndMs())
+                {
+                    heldSustainNotes[lane] = null;
+                    RegisterMiss(note);
+                }
+                else if (songTimeMs >= note.GetSustainEndMs())
+                {
+                    heldSustainNotes[lane] = null;
+                    note.Deactivate();
+                    RegisterSustainComplete();
+                }
+            }
+        }
+
+        private void RegisterHit(NovaFNFNoteView note, float absoluteDifference)
+        {
+            float length = note.GetSustainLengthMs();
+            if (length > 0f && IsLaneHeld(note.GetLane()))
+            {
+                note.SetHoldingSustain(true);
+                heldSustainNotes[note.GetLane()] = note;
+            }
+            else
+            {
+                note.Deactivate();
+            }
+
+            judgedNotes++;
+            if (absoluteDifference <= sickWindowMs)
+            {
+                score += sickScore;
+                weightedAccuracy += 100;
+                combo++;
+                health += hitHealthGain;
+            }
+            else if (absoluteDifference <= goodWindowMs)
+            {
+                score += goodScore;
+                weightedAccuracy += 75;
+                combo++;
+                health += hitHealthGain * 0.75f;
+            }
+            else
+            {
+                score += badScore;
+                weightedAccuracy += 50;
+                combo = 0;
+                health += hitHealthGain * 0.35f;
+            }
+
+            ClampHealth();
+            RefreshUI();
+        }
+
+        private void RegisterSustainComplete()
+        {
+            score += 100;
+            health += hitHealthGain * 0.5f;
+            ClampHealth();
+            RefreshUI();
+        }
+
+        private void RegisterMiss(NovaFNFNoteView note)
+        {
+            if (note != null) note.Deactivate();
+            misses++;
+            judgedNotes++;
+            combo = 0;
+            weightedAccuracy += 0;
+            health -= missHealthLoss;
+            ClampHealth();
+            RefreshUI();
+
+            if (health <= 0f)
+                FinishSong();
+        }
+
+        private NovaFNFNoteView GetFreeNote()
+        {
+            for (int i = 0; i < notePool.Length; i++)
+            {
+                if (notePool[i] != null && !notePool[i].IsActiveNote())
+                    return notePool[i];
+            }
+            return null;
+        }
+
+        private void ClearNotes()
+        {
+            if (notePool != null)
+                for (int i = 0; i < notePool.Length; i++)
+                    if (notePool[i] != null) notePool[i].Deactivate();
+
+            for (int lane = 0; lane < 4; lane++)
+                heldSustainNotes[lane] = null;
+        }
+
+        private bool IsLaneHeld(int lane)
+        {
+            if (lane == 0) return Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
+            if (lane == 1) return Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S);
+            if (lane == 2) return Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W);
+            if (lane == 3) return Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
+            return false;
+        }
+
+        private float GetScrollSpeed()
+        {
+            if (chartIndex < 0 || chartBank.scrollSpeeds == null || chartIndex >= chartBank.scrollSpeeds.Length)
+                return 1f;
+            return Mathf.Max(0.1f, chartBank.scrollSpeeds[chartIndex]);
+        }
+
+        private void ClampHealth()
+        {
+            health = Mathf.Clamp(health, 0f, 2f);
+            accuracy = judgedNotes > 0 ? (float)weightedAccuracy / judgedNotes : 100f;
+        }
+
+        private void RefreshUI()
+        {
+            if (scoreText != null) scoreText.text = "Score: " + score;
+            if (comboText != null) comboText.text = combo + "x";
+            if (missesText != null) missesText.text = "Misses: " + misses;
+            if (accuracyText != null) accuracyText.text = "Accuracy: " + accuracy.ToString("F2") + "%";
+            if (healthFill != null) healthFill.fillAmount = health * 0.5f;
+        }
+
+        private void FinishSong()
+        {
+            if (!playing) return;
+            playing = false;
+            paused = false;
+            if (audioPlayer != null) audioPlayer.StopSong();
+            if (pausePanel != null) pausePanel.SetActive(false);
+            if (menuController != null) menuController.OpenResults();
+        }
+    }
+}
