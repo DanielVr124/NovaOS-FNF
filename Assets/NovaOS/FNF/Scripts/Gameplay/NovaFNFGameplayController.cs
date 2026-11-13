@@ -37,6 +37,11 @@ namespace NovaOS.FNF
         public Transform[] laneReceptors;
         public Animator[] playerStrumlineAnimators;
         public Animator[] opponentStrumlineAnimators;
+        public Animator playerCharacterAnimator;
+        public Animator opponentCharacterAnimator;
+        public string[] playerSingTriggers = { "singLEFT", "singDOWN", "singUP", "singRIGHT" };
+        public string[] opponentSingTriggers = { "singLEFT", "singDOWN", "singUP", "singRIGHT" };
+        public string playerMissTrigger = "miss";
         public string strumConfirmTrigger = "Confirm";
         public string strumPressTrigger = "Press";
         public string strumIdleTrigger = "Static";
@@ -406,7 +411,9 @@ namespace NovaOS.FNF
 
                 if (note.IsOpponentNote() && songTimeMs >= note.GetTimeMs())
                 {
-                    TriggerStrumline(opponentStrumlineAnimators, note.GetLane() % 4, strumConfirmTrigger);
+                    int opponentLane = note.GetLane() % 4;
+                    TriggerStrumline(opponentStrumlineAnimators, opponentLane, strumConfirmTrigger);
+                    TriggerCharacterSing(opponentCharacterAnimator, opponentSingTriggers, opponentLane);
                     note.Deactivate();
                     continue;
                 }
@@ -443,6 +450,7 @@ namespace NovaOS.FNF
         private void RegisterHit(NovaFNFNoteView note, float absoluteDifference)
         {
             TriggerStrumline(playerStrumlineAnimators, note.GetLane(), strumConfirmTrigger);
+            TriggerCharacterSing(playerCharacterAnimator, playerSingTriggers, note.GetLane());
             float length = note.GetSustainLengthMs();
             if (length > 0f && IsLaneHeld(note.GetLane()))
             {
@@ -496,6 +504,8 @@ namespace NovaOS.FNF
             if (note != null)
             {
                 TriggerStrumline(playerStrumlineAnimators, note.GetLane(), strumPressTrigger);
+                if (playerCharacterAnimator != null && !string.IsNullOrEmpty(playerMissTrigger))
+                    playerCharacterAnimator.SetTrigger(playerMissTrigger);
                 note.Deactivate();
             }
             misses++;
@@ -510,6 +520,13 @@ namespace NovaOS.FNF
                 failed = true;
                 FinishSong();
             }
+        }
+
+        private void TriggerCharacterSing(Animator animator, string[] singTriggers, int lane)
+        {
+            if (animator == null || singTriggers == null || lane < 0 || lane >= singTriggers.Length) return;
+            if (!string.IsNullOrEmpty(singTriggers[lane]))
+                animator.SetTrigger(singTriggers[lane]);
         }
 
         private void TriggerStrumline(Animator[] strumline, int lane, string trigger)
