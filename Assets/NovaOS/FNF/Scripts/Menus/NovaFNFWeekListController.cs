@@ -98,7 +98,7 @@ namespace NovaOS.FNF
                         slot.actionId = 11;
                         slot.weekIndex = weekIndex;
                         if (slotIndex < pageVisibleCount) pageActions[slotIndex] = slot;
-                        bool locked = weekIndex >= storyProgression.unlockedWeekCount;
+                        bool locked = !storyProgression.IsWeekUnlocked(weekIndex);
                         slot.SetLocked(locked);
                     }
                 }
