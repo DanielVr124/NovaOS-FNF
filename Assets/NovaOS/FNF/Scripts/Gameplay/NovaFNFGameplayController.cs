@@ -138,6 +138,10 @@ namespace NovaOS.FNF
                 if (end > lastNoteEndMs) lastNoteEndMs = end;
             }
 
+            if (chartBank.playerCharacterIds != null && chartIndex < chartBank.playerCharacterIds.Length &&
+                !string.IsNullOrEmpty(chartBank.playerCharacterIds[chartIndex]))
+                audioPlayer.SetVocalCharacter(chartBank.playerCharacterIds[chartIndex]);
+
             playing = audioPlayer.PlaySong(selectedSongId);
             paused = false;
             if (!playing) return;
@@ -164,7 +168,7 @@ namespace NovaOS.FNF
             if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
                 PauseGame();
 
-            if (nextChartNote >= chartNoteEnd && songTimeMs > lastNoteEndMs + 250f && !audioPlayer.IsSongSourcePlaying())
+            if (nextChartNote >= chartNoteEnd && !audioPlayer.IsSongSourcePlaying())
                 FinishSong();
         }
 
@@ -282,14 +286,14 @@ namespace NovaOS.FNF
                 }
 
                 if (!note.IsOpponentNote() && !note.IsHoldingSustain() &&
-                    songTimeMs > note.GetTimeMs() + missWindowMs)
+                    songTimeMs + inputOffsetMs > note.GetTimeMs() + missWindowMs)
                     RegisterMiss(note);
             }
         }
 
         private void UpdateSustains()
         {
-            float songTimeMs = audioPlayer.GetSongPositionSeconds() * 1000f;
+            float songTimeMs = audioPlayer.GetSongPositionSeconds() * 1000f + inputOffsetMs;
             for (int lane = 0; lane < 4; lane++)
             {
                 NovaFNFNoteView note = heldSustainNotes[lane];
