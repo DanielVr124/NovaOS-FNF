@@ -22,6 +22,8 @@ namespace NovaOS.FNF
         public TextAsset sourceAnimationData;
         public TextAsset spriteAtlasData;
         public Texture2D spriteAtlasTexture;
+        public TextAsset sparrowAtlasXml;
+        public Texture2D sparrowTexture;
     }
 
     [Serializable]
