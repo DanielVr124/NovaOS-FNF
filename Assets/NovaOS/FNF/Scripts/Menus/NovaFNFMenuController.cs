@@ -22,6 +22,7 @@ namespace NovaOS.FNF
         public int accessibilityScreenIndex = 7;
         public int gameplayScreenIndex = 8;
         public int resultsScreenIndex = 9;
+        public int difficultySelectScreenIndex = 10;
 
         [Header("Screen transitions")]
         public Animator[] screenAnimators;
@@ -34,6 +35,7 @@ namespace NovaOS.FNF
         public NovaFNFMenuAction[] mainMenuActions;
         public NovaFNFMenuAction[] storyModeActions;
         public NovaFNFMenuAction[] freeplayActions;
+        public NovaFNFMenuAction[] difficultyActions;
         public NovaFNFMenuAction[] optionsActions;
         public NovaFNFMenuAction[] controlsActions;
         public NovaFNFMenuAction[] audioActions;
@@ -54,6 +56,7 @@ namespace NovaOS.FNF
 
         [Header("Gameplay handoff")]
         public NovaFNFGameplayController gameplayController;
+        public NovaFNFDifficultyListController difficultyList;
         public NovaFNFStoryProgression storyProgression;
         public int selectedWeekIndex;
         public string selectedSongId = "";
@@ -127,6 +130,13 @@ namespace NovaOS.FNF
             PlayUiSound(confirmSound);
         }
 
+        public void OpenDifficultySelect()
+        {
+            ShowScreen(difficultySelectScreenIndex, true);
+            PlayUiSound(confirmSound);
+            if (difficultyList != null) difficultyList.BuildForSelectedSong();
+        }
+
         public void OpenOptions()
         {
             ShowScreen(optionsScreenIndex, true);
@@ -174,6 +184,17 @@ namespace NovaOS.FNF
         {
             ShowScreen(resultsScreenIndex, true);
             PlayMenuTrack(resultsMusicId);
+        }
+
+        public void SetDifficultyActions(NovaFNFMenuAction[] actions)
+        {
+            difficultyActions = actions;
+            if (currentScreenIndex == difficultySelectScreenIndex)
+            {
+                currentActions = difficultyActions;
+                selectedActionIndex = 0;
+                RefreshHighlights();
+            }
         }
 
         public void SetStoryActions(NovaFNFMenuAction[] actions)
@@ -282,6 +303,7 @@ namespace NovaOS.FNF
             else if (actionId == 9) OpenResults();
             else if (actionId == 10) OpenTitle();
             else if (actionId == 11 && storyProgression != null) storyProgression.BeginSelectedWeek();
+            else if (actionId == 12) OpenDifficultySelect();
         }
 
         private void ShowScreen(int screenIndex, bool pushHistory)
@@ -350,6 +372,7 @@ namespace NovaOS.FNF
         private NovaFNFMenuAction[] ActionsForScreen(int screenIndex)
         {
             if (screenIndex == mainMenuScreenIndex) return mainMenuActions;
+            if (screenIndex == difficultySelectScreenIndex) return difficultyActions;
             if (screenIndex == storyModeScreenIndex) return storyModeActions;
             if (screenIndex == freeplayScreenIndex) return freeplayActions;
             if (screenIndex == optionsScreenIndex) return optionsActions;
