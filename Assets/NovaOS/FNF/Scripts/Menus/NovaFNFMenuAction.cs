@@ -13,6 +13,8 @@ namespace NovaOS.FNF
         [Tooltip("0 Story, 1 Freeplay, 2 Options, 3 Back, 4 Controls, 5 Audio, 6 Accessibility, 7 Start selected song, 8 Main Menu, 9 Results, 10 Title")]
         public int actionId;
         public string songId;
+        public string variationId = "default";
+        public string difficultyId = "normal";
         public GameObject highlightVisual;
 
         public void OnButtonPressed()
@@ -20,6 +22,8 @@ namespace NovaOS.FNF
             if (menuController == null) return;
             if (!string.IsNullOrEmpty(songId))
                 menuController.SetSelectedSong(songId);
+            if (!string.IsNullOrEmpty(variationId)) menuController.SetSelectedVariation(variationId);
+            if (!string.IsNullOrEmpty(difficultyId)) menuController.SetSelectedDifficulty(difficultyId);
             menuController.RunAction(actionId);
         }
 
