@@ -284,7 +284,10 @@ namespace NovaOS.FNF
             if (!playing)
             {
                 Debug.LogWarning("Unable to start song audio for " + selectedSongId + ".");
-                if (menuController != null) menuController.OpenFreeplay();
+                if (storyProgression != null && storyProgression.storyRunActive)
+                    storyProgression.CancelStoryRun();
+                else if (menuController != null)
+                    menuController.OpenFreeplay();
                 return;
             }
 
