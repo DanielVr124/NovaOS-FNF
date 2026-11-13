@@ -14,6 +14,7 @@ namespace NovaOS.FNF
         public NovaFNFMenuController menuController;
         public NovaFNFMenuAction[] difficultySlots;
         public Text[] difficultyLabels;
+        public Text[] ratingLabels;
         public Text pageLabel;
 
         private string[] availableDifficulties;
@@ -87,12 +88,35 @@ namespace NovaOS.FNF
                         ? FormatDifficulty(availableDifficulties[visibleIndices[slotIndex]])
                         : "";
                 }
+
+                if (ratingLabels != null && slotIndex < ratingLabels.Length &&
+                    ratingLabels[slotIndex] != null)
+                {
+                    int rating = valid ? FindRating(availableDifficulties[visibleIndices[slotIndex]]) : 0;
+                    ratingLabels[slotIndex].text = valid && rating > 0 ? rating + " / 10" : "";
+                }
             }
 
             if (menuController != null) menuController.SetDifficultyActions(actions);
             if (pageLabel != null)
                 pageLabel.text = difficultyCount == 0 ? "NO DIFFICULTIES" :
                     Mathf.Min(difficultyCount, difficultySlots.Length) + " AVAILABLE";
+        }
+
+        private int FindRating(string difficulty)
+        {
+            if (chartBank == null || chartBank.difficultyRatings == null) return 0;
+            for (int i = 0; i < chartBank.songIds.Length; i++)
+            {
+                if (chartBank.songIds[i] != menuController.selectedSongId) continue;
+                string variation = chartBank.variationIds != null && i < chartBank.variationIds.Length
+                    ? chartBank.variationIds[i] : "default";
+                if (variation != menuController.selectedVariationId) continue;
+                if (i < chartBank.difficultyIds.Length && chartBank.difficultyIds[i] == difficulty &&
+                    i < chartBank.difficultyRatings.Length)
+                    return chartBank.difficultyRatings[i];
+            }
+            return 0;
         }
 
         private bool HasDifficulty(string difficulty)
