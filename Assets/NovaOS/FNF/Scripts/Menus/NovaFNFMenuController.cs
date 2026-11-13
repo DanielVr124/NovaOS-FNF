@@ -147,6 +147,17 @@ namespace NovaOS.FNF
             ShowScreen(resultsScreenIndex, true);
         }
 
+        public void SetFreeplayActions(NovaFNFMenuAction[] actions)
+        {
+            freeplayActions = actions;
+            if (currentScreenIndex == freeplayScreenIndex)
+            {
+                currentActions = freeplayActions;
+                selectedActionIndex = 0;
+                RefreshHighlights();
+            }
+        }
+
         public void SetSelectedSong(string songId)
         {
             selectedSongId = songId;
