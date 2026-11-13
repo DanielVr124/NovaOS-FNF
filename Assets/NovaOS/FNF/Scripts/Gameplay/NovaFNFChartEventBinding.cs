@@ -41,7 +41,7 @@ namespace NovaOS.FNF
             if (!string.IsNullOrEmpty(requiredValueFragment))
             {
                 if (string.IsNullOrEmpty(valueJson) ||
-                    !valueJson.Contains(requiredValueFragment))
+                    valueJson.IndexOf(requiredValueFragment) < 0)
                     return;
             }
 
