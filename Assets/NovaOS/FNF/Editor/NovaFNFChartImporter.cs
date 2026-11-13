@@ -8,6 +8,7 @@ using NovaOS.FNF;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UdonSharpEditor;
 
 namespace NovaOS.FNF.Editor
 {
@@ -30,7 +31,7 @@ namespace NovaOS.FNF.Editor
                 return;
             }
 
-            NovaFNFChartBank bank = selected.GetComponent<NovaFNFChartBank>();
+            NovaFNFChartBank bank = selected.GetUdonSharpComponent<NovaFNFChartBank>();
             if (bank == null)
             {
                 EditorUtility.DisplayDialog("NovaOS Chart Importer", "The selected GameObject needs the NovaFNFChartBank UdonSharp component.", "OK");
