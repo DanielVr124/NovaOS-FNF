@@ -440,8 +440,9 @@ namespace NovaOS.FNF
             if (audioPlayer != null) audioPlayer.StopSong();
             if (beatClock != null) beatClock.StopClock();
             ClearNotes();
+            string recordSongId = selectedSongId + "-" + selectedVariationId;
             if (saveManager != null)
-                saveManager.SaveSongResult(selectedSongId + "-" + selectedVariationId, selectedDifficultyId,
+                saveManager.SaveSongResult(recordSongId, selectedDifficultyId,
                     score, misses, accuracy, highestCombo);
             if (pausePanel != null) pausePanel.SetActive(false);
             if (storyProgression != null && storyProgression.storyRunActive)
@@ -456,7 +457,8 @@ namespace NovaOS.FNF
                 if (chartBank != null && chartBank.songNames != null &&
                     chartIndex >= 0 && chartIndex < chartBank.songNames.Length)
                     title = chartBank.songNames[chartIndex];
-                resultsController.ShowResults(title, score, misses, accuracy, highestCombo, failed);
+                resultsController.ShowResultsWithRecords(title, recordSongId, selectedDifficultyId,
+                    score, misses, accuracy, highestCombo, failed);
             }
             if (menuController != null) menuController.OpenResults();
         }
