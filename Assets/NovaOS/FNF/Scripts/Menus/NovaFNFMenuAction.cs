@@ -17,6 +17,7 @@ namespace NovaOS.FNF
         public string variationId = "default";
         public string difficultyId = "normal";
         public GameObject highlightVisual;
+        public Animator itemAnimator;
 
         public void OnButtonPressed()
         {
@@ -30,10 +31,17 @@ namespace NovaOS.FNF
             menuController.RunAction(actionId);
         }
 
+        public void OnPointerEnter()
+        {
+            if (menuController != null) menuController.SelectAction(this);
+        }
+
         public void SetHighlighted(bool highlighted)
         {
             if (highlightVisual != null)
                 highlightVisual.SetActive(highlighted);
+            if (itemAnimator != null)
+                itemAnimator.SetBool("Selected", highlighted);
         }
     }
 }
