@@ -463,7 +463,7 @@ namespace NovaOS.FNF
                 return;
             }
 
-            if (menuAudioPlayer != null) menuAudioPlayer.PlaySongPreview(action.songId, 0f, 0f);
+            if (menuAudioPlayer != null) menuAudioPlayer.PlaySongPreview(action.songId, action.variationId, 0f, 0f);
         }
 
         private void PlayScreenMusic(int screenIndex)
