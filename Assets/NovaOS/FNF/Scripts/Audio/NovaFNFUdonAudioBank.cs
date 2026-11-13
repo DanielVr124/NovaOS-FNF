@@ -12,10 +12,12 @@ namespace NovaOS.FNF
     {
         [Header("Songs")]
         public string[] songIds;
+        public string[] songVariationIds;
         public AudioClip[] instrumentals;
         public AudioClip[] vocals;
         public string[] voiceSongIds;
         public string[] voiceCharacterIds;
+        public string[] voiceVariationIds;
         public AudioClip[] voiceClips;
 
         [Header("Menu Music")]
@@ -28,27 +30,76 @@ namespace NovaOS.FNF
 
         public int FindSongIndex(string id)
         {
-            string wanted = NormalizeId(id);
+            return FindSongIndex(id, "default");
+        }
+
+        public int FindSongIndex(string id, string variationId)
+        {
+            string wantedSong = NormalizeId(id);
+            string wantedVariation = NormalizeId(variationId);
             if (songIds == null) return -1;
 
             for (int i = 0; i < songIds.Length; i++)
             {
-                if (NormalizeId(songIds[i]) == wanted) return i;
+                string variation = songVariationIds != null && i < songVariationIds.Length
+                    ? NormalizeId(songVariationIds[i]) : "default";
+                if (NormalizeId(songIds[i]) == wantedSong && variation == wantedVariation) return i;
+            }
+
+            if (wantedVariation != "default")
+            {
+                for (int i = 0; i < songIds.Length; i++)
+                {
+                    string variation = songVariationIds != null && i < songVariationIds.Length
+                        ? NormalizeId(songVariationIds[i]) : "default";
+                    if (NormalizeId(songIds[i]) == wantedSong && variation == "default") return i;
+                }
             }
             return -1;
         }
 
         public int FindVoiceIndex(string songId, string characterId)
         {
+            return FindVoiceIndex(songId, characterId, "default");
+        }
+
+        public int FindVoiceIndex(string songId, string characterId, string variationId)
+        {
             string wantedSong = NormalizeId(songId);
             string wantedCharacter = NormalizeId(characterId);
+            string wantedVariation = NormalizeId(variationId);
             if (voiceSongIds == null || voiceCharacterIds == null) return -1;
 
+            // Prefer the exact character/variation pair.
+            int exact = FindVoicePair(wantedSong, wantedCharacter, wantedVariation);
+            if (exact >= 0) return exact;
+
+            // If the variation has no character-specific stem, use default vocals for that variation.
+            exact = FindVoicePair(wantedSong, "default", wantedVariation);
+            if (exact >= 0) return exact;
+
+            // Otherwise, reuse this character's default-variation vocal stem.
+            if (wantedVariation != "default")
+            {
+                exact = FindVoicePair(wantedSong, wantedCharacter, "default");
+                if (exact >= 0) return exact;
+                exact = FindVoicePair(wantedSong, "default", "default");
+                if (exact >= 0) return exact;
+            }
+            return -1;
+        }
+
+        private int FindVoicePair(string wantedSong, string wantedCharacter, string wantedVariation)
+        {
+            if (voiceSongIds == null || voiceCharacterIds == null) return -1;
             for (int i = 0; i < voiceSongIds.Length; i++)
             {
                 if (i >= voiceCharacterIds.Length) break;
+                string variation = voiceVariationIds != null && i < voiceVariationIds.Length
+                    ? NormalizeId(voiceVariationIds[i]) : "default";
                 if (NormalizeId(voiceSongIds[i]) == wantedSong &&
-                    NormalizeId(voiceCharacterIds[i]) == wantedCharacter)
+                    NormalizeId(voiceCharacterIds[i]) == wantedCharacter &&
+                    variation == wantedVariation)
                     return i;
             }
             return -1;
@@ -56,14 +107,14 @@ namespace NovaOS.FNF
 
         public AudioClip GetVoiceClip(string songId, string characterId)
         {
-            int index = FindVoiceIndex(songId, characterId);
+            return GetVoiceClip(songId, characterId, "default");
+        }
+
+        public AudioClip GetVoiceClip(string songId, string characterId, string variationId)
+        {
+            int index = FindVoiceIndex(songId, characterId, variationId);
             if (index >= 0 && voiceClips != null && index < voiceClips.Length)
                 return voiceClips[index];
-
-            int defaultIndex = FindVoiceIndex(songId, "default");
-            if (defaultIndex >= 0 && voiceClips != null && defaultIndex < voiceClips.Length)
-                return voiceClips[defaultIndex];
-
             return null;
         }
 
