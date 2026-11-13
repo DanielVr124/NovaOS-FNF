@@ -11,6 +11,7 @@ namespace NovaOS.FNF
         public sealed class SongAudio
         {
             public string songId;
+            public string variationId = "default";
             public AudioClip instrumental;
             public AudioClip vocals;
         }
@@ -19,6 +20,7 @@ namespace NovaOS.FNF
         public sealed class VoiceAudio
         {
             public string songId;
+            public string variationId = "default";
             public string characterId;
             public AudioClip clip;
         }
@@ -42,13 +44,33 @@ namespace NovaOS.FNF
 
         public bool TryGetSong(string songId, out SongAudio result)
         {
-            string wanted = NormalizeId(songId);
+            return TryGetSong(songId, "default", out result);
+        }
+
+        public bool TryGetSong(string songId, string variationId, out SongAudio result)
+        {
+            string wantedSong = NormalizeId(songId);
+            string wantedVariation = NormalizeId(variationId);
             for (int i = 0; i < songs.Count; i++)
             {
-                if (NormalizeId(songs[i].songId) == wanted)
+                if (NormalizeId(songs[i].songId) == wantedSong &&
+                    NormalizeId(songs[i].variationId) == wantedVariation)
                 {
                     result = songs[i];
                     return true;
+                }
+            }
+
+            if (wantedVariation != "default")
+            {
+                for (int i = 0; i < songs.Count; i++)
+                {
+                    if (NormalizeId(songs[i].songId) == wantedSong &&
+                        NormalizeId(songs[i].variationId) == "default")
+                    {
+                        result = songs[i];
+                        return true;
+                    }
                 }
             }
 
