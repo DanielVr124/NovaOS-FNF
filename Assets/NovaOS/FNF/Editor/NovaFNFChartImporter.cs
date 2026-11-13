@@ -77,6 +77,11 @@ namespace NovaOS.FNF.Editor
                     GetSongAndVariation(metadataPath, out songId, out variationId);
                     string songName = GetString(metadata, "songName", songId);
                     string artist = GetString(metadata, "artist", "");
+                    Dictionary<string, object> playData = AsObject(GetValue(metadata, "playData"));
+                    Dictionary<string, object> characters = AsObject(GetValue(playData, "characters"));
+                    string playerCharacter = Normalize(GetString(characters, "player", "bf"));
+                    string opponentCharacter = Normalize(GetString(characters, "opponent", "dad"));
+                    string girlfriendCharacter = Normalize(GetString(characters, "girlfriend", "gf"));
                     float[] bpmTimes;
                     float[] bpmValues;
                     ReadBpmChanges(metadata, out bpmTimes, out bpmValues);
@@ -102,6 +107,9 @@ namespace NovaOS.FNF.Editor
                         record.key = record.songId + "|" + record.variationId + "|" + record.difficultyId;
                         record.songName = songName;
                         record.artist = artist;
+                        record.playerCharacterId = playerCharacter;
+                        record.opponentCharacterId = opponentCharacter;
+                        record.girlfriendCharacterId = girlfriendCharacter;
                         record.baseBpm = baseBpm;
                         record.scrollSpeed = GetNumber(scrollSpeeds, difficultyPair.Key,
                             GetNumber(scrollSpeeds, "default", 1f));
@@ -167,6 +175,9 @@ namespace NovaOS.FNF.Editor
             List<string> difficultyIds = new List<string>();
             List<string> songNames = new List<string>();
             List<string> artists = new List<string>();
+            List<string> playerCharacterIds = new List<string>();
+            List<string> opponentCharacterIds = new List<string>();
+            List<string> girlfriendCharacterIds = new List<string>();
             List<float> baseBpms = new List<float>();
             List<float> scrollSpeeds = new List<float>();
             List<int> noteStarts = new List<int>();
@@ -189,6 +200,9 @@ namespace NovaOS.FNF.Editor
                 difficultyIds.Add(chart.difficultyId);
                 songNames.Add(chart.songName);
                 artists.Add(chart.artist);
+                playerCharacterIds.Add(chart.playerCharacterId);
+                opponentCharacterIds.Add(chart.opponentCharacterId);
+                girlfriendCharacterIds.Add(chart.girlfriendCharacterId);
                 baseBpms.Add(chart.baseBpm);
                 scrollSpeeds.Add(chart.scrollSpeed);
 
@@ -212,6 +226,9 @@ namespace NovaOS.FNF.Editor
             SetStrings(serialized, "difficultyIds", difficultyIds);
             SetStrings(serialized, "songNames", songNames);
             SetStrings(serialized, "artists", artists);
+            SetStrings(serialized, "playerCharacterIds", playerCharacterIds);
+            SetStrings(serialized, "opponentCharacterIds", opponentCharacterIds);
+            SetStrings(serialized, "girlfriendCharacterIds", girlfriendCharacterIds);
             SetFloats(serialized, "baseBpms", baseBpms);
             SetFloats(serialized, "scrollSpeeds", scrollSpeeds);
             SetInts(serialized, "noteStarts", noteStarts);
@@ -360,6 +377,9 @@ namespace NovaOS.FNF.Editor
             public string difficultyId;
             public string songName;
             public string artist;
+            public string playerCharacterId;
+            public string opponentCharacterId;
+            public string girlfriendCharacterId;
             public float baseBpm;
             public float scrollSpeed;
             public List<float> noteTimes = new List<float>();
