@@ -163,7 +163,7 @@ namespace NovaOS.FNF
             if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
                 PauseGame();
 
-            if (nextChartNote >= chartNoteEnd && songTimeMs > lastNoteEndMs + 1800f)
+            if (nextChartNote >= chartNoteEnd && songTimeMs > lastNoteEndMs + 250f && !audioPlayer.IsSongSourcePlaying())
                 FinishSong();
         }
 
