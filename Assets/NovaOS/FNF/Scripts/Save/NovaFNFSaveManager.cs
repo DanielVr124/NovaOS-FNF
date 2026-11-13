@@ -19,6 +19,8 @@ namespace NovaOS.FNF
         public int unlockedStoryWeeks = 1;
         public int songsPlayed;
         public NovaFNFStoryProgression storyProgression;
+        public NovaFNFWeekListController weekListController;
+        public NovaFNFFreeplayListController freeplayListController;
         public NovaFNFOptionsController optionsController;
 
         public override void OnPlayerRestored(VRCPlayerApi player)
@@ -29,6 +31,8 @@ namespace NovaOS.FNF
             if (unlockedStoryWeeks < 1) unlockedStoryWeeks = 1;
             songsPlayed = PlayerData.GetInt(player, SongsPlayedKey);
             if (storyProgression != null) storyProgression.RestoreUnlockCount(unlockedStoryWeeks);
+            if (weekListController != null) weekListController.RefreshLockedStates();
+            if (freeplayListController != null) freeplayListController.RefreshFavorites();
             if (optionsController != null) LoadGameplaySettings(optionsController);
         }
 
@@ -111,6 +115,7 @@ namespace NovaOS.FNF
             if (!dataRestored || local == null) return;
             unlockedStoryWeeks = Mathf.Max(unlockedStoryWeeks, Mathf.Max(1, weekCount));
             PlayerData.SetInt(StoryUnlockKey, unlockedStoryWeeks);
+            if (weekListController != null) weekListController.RefreshLockedStates();
         }
 
         public int LoadStoryUnlocks()
