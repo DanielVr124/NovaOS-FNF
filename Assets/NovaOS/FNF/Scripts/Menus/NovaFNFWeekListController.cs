@@ -125,7 +125,10 @@ namespace NovaOS.FNF
 
         public void RefreshLockedStates()
         {
-            RefreshPage();
+            if (visibleWeekIndices == null)
+                BuildWeekList();
+            else
+                RefreshPage();
         }
     }
 }
