@@ -66,6 +66,7 @@ namespace NovaOS.FNF
         private NovaFNFMenuAction[] currentActions;
         private int selectedActionIndex;
         private int pendingHideScreenIndex = -1;
+        private float pendingHideAtTime;
 
         private void Start()
         {
@@ -315,6 +316,7 @@ namespace NovaOS.FNF
             {
                 TriggerScreenAnimation(previousScreen, screenExitTrigger);
                 pendingHideScreenIndex = previousScreen;
+                pendingHideAtTime = Time.time + screenTransitionSeconds;
                 SendCustomEventDelayedSeconds("HideOutgoingScreen", screenTransitionSeconds);
             }
             else
@@ -331,6 +333,7 @@ namespace NovaOS.FNF
 
         public void HideOutgoingScreen()
         {
+            if (Time.time < pendingHideAtTime) return;
             int hideIndex = pendingHideScreenIndex;
             pendingHideScreenIndex = -1;
             if (hideIndex < 0 || hideIndex >= screens.Length || hideIndex == currentScreenIndex) return;
