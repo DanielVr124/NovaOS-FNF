@@ -14,6 +14,8 @@ namespace NovaOS.FNF
         public string eventKind;
         [Tooltip("Optional case-sensitive fragment required in the event value JSON. Leave empty to accept every value.")]
         public string requiredValueFragment;
+        public NovaFNFOptionsController optionsController;
+        public bool requiresFlashingLights;
 
         [Header("Animation")]
         public Animator[] animators;
@@ -38,6 +40,10 @@ namespace NovaOS.FNF
 
         public void Dispatch(string valueJson)
         {
+            if (requiresFlashingLights && optionsController != null &&
+                !optionsController.flashingLights)
+                return;
+
             if (!string.IsNullOrEmpty(requiredValueFragment))
             {
                 if (string.IsNullOrEmpty(valueJson) ||
