@@ -23,6 +23,13 @@ namespace NovaOS.FNF
         public int gameplayScreenIndex = 8;
         public int resultsScreenIndex = 9;
 
+        [Header("Screen transitions")]
+        public Animator[] screenAnimators;
+        public bool animateScreenTransitions = true;
+        public float screenTransitionSeconds = 0.22f;
+        public string screenEnterTrigger = "Enter";
+        public string screenExitTrigger = "Exit";
+
         [Header("Keyboard-selectable menu items")]
         public NovaFNFMenuAction[] mainMenuActions;
         public NovaFNFMenuAction[] storyModeActions;
@@ -58,6 +65,7 @@ namespace NovaOS.FNF
         private int historyCount;
         private NovaFNFMenuAction[] currentActions;
         private int selectedActionIndex;
+        private int pendingHideScreenIndex = -1;
 
         private void Start()
         {
@@ -284,13 +292,56 @@ namespace NovaOS.FNF
                 historyCount++;
             }
 
+            int previousScreen = currentScreenIndex;
+            bool keepPreviousForExit = animateScreenTransitions &&
+                screenTransitionSeconds > 0f &&
+                previousScreen >= 0 && previousScreen < screens.Length &&
+                previousScreen != screenIndex && screens[previousScreen] != null;
+
+            if (pendingHideScreenIndex >= 0 && pendingHideScreenIndex != previousScreen &&
+                pendingHideScreenIndex != screenIndex && pendingHideScreenIndex < screens.Length &&
+                screens[pendingHideScreenIndex] != null)
+                screens[pendingHideScreenIndex].SetActive(false);
+
             for (int i = 0; i < screens.Length; i++)
-                if (screens[i] != null) screens[i].SetActive(i == screenIndex);
+            {
+                if (screens[i] == null) continue;
+                bool shouldKeep = i == screenIndex || (keepPreviousForExit && i == previousScreen);
+                if (shouldKeep) screens[i].SetActive(true);
+                else screens[i].SetActive(false);
+            }
+
+            if (keepPreviousForExit)
+            {
+                TriggerScreenAnimation(previousScreen, screenExitTrigger);
+                pendingHideScreenIndex = previousScreen;
+                SendCustomEventDelayedSeconds("HideOutgoingScreen", screenTransitionSeconds);
+            }
+            else
+            {
+                pendingHideScreenIndex = -1;
+            }
 
             currentScreenIndex = screenIndex;
+            if (animateScreenTransitions) TriggerScreenAnimation(screenIndex, screenEnterTrigger);
             selectedActionIndex = 0;
             currentActions = ActionsForScreen(screenIndex);
             RefreshHighlights();
+        }
+
+        public void HideOutgoingScreen()
+        {
+            int hideIndex = pendingHideScreenIndex;
+            pendingHideScreenIndex = -1;
+            if (hideIndex < 0 || hideIndex >= screens.Length || hideIndex == currentScreenIndex) return;
+            if (screens[hideIndex] != null) screens[hideIndex].SetActive(false);
+        }
+
+        private void TriggerScreenAnimation(int screenIndex, string triggerName)
+        {
+            if (screenAnimators == null || screenIndex < 0 || screenIndex >= screenAnimators.Length) return;
+            if (screenAnimators[screenIndex] == null || string.IsNullOrEmpty(triggerName)) return;
+            screenAnimators[screenIndex].SetTrigger(triggerName);
         }
 
         private NovaFNFMenuAction[] ActionsForScreen(int screenIndex)
