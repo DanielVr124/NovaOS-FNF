@@ -21,6 +21,8 @@ namespace NovaOS.FNF
         public string[] girlfriendCharacterIds;
         public float[] baseBpms;
         public float[] scrollSpeeds;
+        public float[] previewStartSeconds;
+        public float[] previewEndSeconds;
         public int[] noteStarts;
         public int[] noteCounts;
         public int[] bpmStarts;
