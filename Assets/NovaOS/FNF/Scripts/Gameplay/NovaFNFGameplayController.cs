@@ -583,6 +583,9 @@ namespace NovaOS.FNF
             if (chartEventRouter != null) chartEventRouter.StopEvents();
             ClearNotes();
             string recordSongId = selectedSongId + "-" + selectedVariationId;
+            int previousBestScore = saveManager != null
+                ? saveManager.GetBestScore(recordSongId, selectedDifficultyId) : 0;
+            bool isNewHighScore = score > previousBestScore && score > 0;
             if (saveManager != null)
                 saveManager.SaveSongResult(recordSongId, selectedDifficultyId,
                     score, misses, accuracy, highestCombo);
@@ -600,7 +603,7 @@ namespace NovaOS.FNF
                     chartIndex >= 0 && chartIndex < chartBank.songNames.Length)
                     title = chartBank.songNames[chartIndex];
                 resultsController.ShowResultsWithRecords(title, recordSongId, selectedDifficultyId,
-                    score, misses, accuracy, highestCombo, failed);
+                    score, misses, accuracy, highestCombo, failed, isNewHighScore);
             }
             if (menuController != null) menuController.OpenResults();
         }
