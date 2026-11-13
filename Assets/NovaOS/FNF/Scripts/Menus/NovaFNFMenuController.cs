@@ -57,6 +57,7 @@ namespace NovaOS.FNF
 
         [Header("Gameplay handoff")]
         public NovaFNFGameplayController gameplayController;
+        public NovaFNFInputBindings inputBindings;
         public NovaFNFDifficultyListController difficultyList;
         public NovaFNFStoryProgression storyProgression;
         public int selectedWeekIndex;
@@ -80,7 +81,10 @@ namespace NovaOS.FNF
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
+            bool backPressed = inputBindings != null
+                ? inputBindings.BackPressed()
+                : Input.GetKeyDown(KeyCode.Escape);
+            if (backPressed)
             {
                 if (currentScreenIndex == gameplayScreenIndex && gameplayController != null)
                     gameplayController.PauseGame();
@@ -89,13 +93,20 @@ namespace NovaOS.FNF
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
-                MoveSelection(-1);
+            bool upPressed = inputBindings != null
+                ? inputBindings.MenuUpPressed()
+                : Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W);
+            bool downPressed = inputBindings != null
+                ? inputBindings.MenuDownPressed()
+                : Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S);
+            bool acceptPressed = inputBindings != null
+                ? inputBindings.AcceptPressed()
+                : Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space);
 
-            if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
-                MoveSelection(1);
+            if (upPressed) MoveSelection(-1);
+            if (downPressed) MoveSelection(1);
 
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space))
+            if (acceptPressed)
             {
                 if (currentScreenIndex == titleScreenIndex)
                     OpenMainMenu();
