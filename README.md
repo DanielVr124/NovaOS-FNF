@@ -134,7 +134,8 @@ Runtime scripts:
 
 - `NovaFNFChartBank` — flattened chart data.
 - `NovaFNFNoteView` — pooled note visuals, lane arrows and sustain-body presentation.
-- `NovaFNFGameplayController` — note spawning, four player lanes, opponent auto-notes, input judgements, sustain tracking, score, combo, misses, accuracy, health, countdown, pause/retry/exit and results handoff.
+- `NovaFNFGameplayController` — note spawning, four player lanes, opponent auto-notes, Sick/Good/Bad/Shit timing windows, sustain tracking, score, combo, misses, accuracy, health, countdown, pause/retry/exit and results handoff.
+- `NovaFNFJudgementPopup` — animated judgement text with optional separate hit-grade sound effects.
 - `NovaFNFBeatClock` — BPM-change-aware beat/step callbacks for character/stage animators and camera pulses.
 - `NovaFNFChartEventRouter` / `NovaFNFChartEventBinding` — time-based dispatch of imported chart event data to configured scene reactions.
 - `NovaFNFUdonAudioPlayer` — song stems, menu crossfades, previews, pause/resume and sound effects.
