@@ -56,9 +56,6 @@ namespace NovaOS.FNF
             pageCount = slotCount > 0 ? Mathf.CeilToInt((float)visibleWeekCount / slotCount) : 0;
             currentPage = 0;
 
-            if (menuController != null && weekSlots != null)
-                menuController.SetStoryActions(weekSlots);
-
             RefreshPage();
         }
 
@@ -82,6 +79,8 @@ namespace NovaOS.FNF
         {
             if (weekSlots == null) return;
             int start = currentPage * weekSlots.Length;
+            int pageVisibleCount = Mathf.Min(weekSlots.Length, Mathf.Max(0, visibleWeekCount - start));
+            NovaFNFMenuAction[] pageActions = new NovaFNFMenuAction[pageVisibleCount];
 
             for (int slotIndex = 0; slotIndex < weekSlots.Length; slotIndex++)
             {
@@ -98,6 +97,7 @@ namespace NovaOS.FNF
                         slot.menuController = menuController;
                         slot.actionId = 11;
                         slot.weekIndex = weekIndex;
+                        if (slotIndex < pageVisibleCount) pageActions[slotIndex] = slot;
                         bool locked = weekIndex >= storyProgression.unlockedWeekCount;
                         slot.SetLocked(locked);
                     }
@@ -118,6 +118,9 @@ namespace NovaOS.FNF
                     weekTitleLabels[slotIndex].text = title;
                 }
             }
+
+            if (menuController != null)
+                menuController.SetStoryActions(pageActions);
 
             if (pageLabel != null)
                 pageLabel.text = pageCount == 0 ? "0 / 0" : (currentPage + 1) + " / " + pageCount;
