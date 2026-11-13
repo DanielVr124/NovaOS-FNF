@@ -35,6 +35,11 @@ namespace NovaOS.FNF
 
         [Header("Note field")]
         public Transform[] laneReceptors;
+        public Animator[] playerStrumlineAnimators;
+        public Animator[] opponentStrumlineAnimators;
+        public string strumConfirmTrigger = "Confirm";
+        public string strumPressTrigger = "Press";
+        public string strumIdleTrigger = "Static";
         public NovaFNFNoteView[] notePool;
 
         [Header("Judgement windows (milliseconds)")]
@@ -401,6 +406,7 @@ namespace NovaOS.FNF
 
                 if (note.IsOpponentNote() && songTimeMs >= note.GetTimeMs())
                 {
+                    TriggerStrumline(opponentStrumlineAnimators, note.GetLane() % 4, strumConfirmTrigger);
                     note.Deactivate();
                     continue;
                 }
@@ -436,6 +442,7 @@ namespace NovaOS.FNF
 
         private void RegisterHit(NovaFNFNoteView note, float absoluteDifference)
         {
+            TriggerStrumline(playerStrumlineAnimators, note.GetLane(), strumConfirmTrigger);
             float length = note.GetSustainLengthMs();
             if (length > 0f && IsLaneHeld(note.GetLane()))
             {
@@ -486,7 +493,11 @@ namespace NovaOS.FNF
 
         private void RegisterMiss(NovaFNFNoteView note)
         {
-            if (note != null) note.Deactivate();
+            if (note != null)
+            {
+                TriggerStrumline(playerStrumlineAnimators, note.GetLane(), strumPressTrigger);
+                note.Deactivate();
+            }
             misses++;
             judgedNotes++;
             combo = 0;
@@ -499,6 +510,14 @@ namespace NovaOS.FNF
                 failed = true;
                 FinishSong();
             }
+        }
+
+        private void TriggerStrumline(Animator[] strumline, int lane, string trigger)
+        {
+            if (strumline == null || lane < 0 || lane >= strumline.Length) return;
+            Animator animator = strumline[lane];
+            if (animator != null && !string.IsNullOrEmpty(trigger))
+                animator.SetTrigger(trigger);
         }
 
         private NovaFNFNoteView GetFreeNote()
