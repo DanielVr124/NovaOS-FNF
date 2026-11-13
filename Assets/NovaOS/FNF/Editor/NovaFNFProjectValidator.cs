@@ -35,11 +35,11 @@ namespace NovaOS.FNF.Editor
             NovaFNFInputBindings controls = Object.FindObjectOfType<NovaFNFInputBindings>();
             NovaFNFControlsController controlsScreen = Object.FindObjectOfType<NovaFNFControlsController>();
 
-            Check(audioBank != null, "A NovaFNFUdonAudioBank component exists.", errors);
-            Check(chartBank != null, "A NovaFNFChartBank component exists.", errors);
-            Check(audioPlayer != null, "A NovaFNFUdonAudioPlayer component exists.", errors);
-            Check(menu != null, "A NovaFNFMenuController component exists.", errors);
-            Check(gameplay != null, "A NovaFNFGameplayController component exists.", errors);
+            Check(audioBank != null, "A NovaFNFUdonAudioBank component exists.", errors, passed);
+            Check(chartBank != null, "A NovaFNFChartBank component exists.", errors, passed);
+            Check(audioPlayer != null, "A NovaFNFUdonAudioPlayer component exists.", errors, passed);
+            Check(menu != null, "A NovaFNFMenuController component exists.", errors, passed);
+            Check(gameplay != null, "A NovaFNFGameplayController component exists.", errors, passed);
 
             if (audioBank != null)
             {
@@ -48,32 +48,32 @@ namespace NovaOS.FNF.Editor
                 else
                 {
                     Check(audioBank.songIds.Length == audioBank.instrumentals.Length,
-                        "Audio bank song ID and instrumental arrays have matching lengths.", errors);
+                        "Audio bank song ID and instrumental arrays have matching lengths.", errors, passed);
                     Check(audioBank.songVariationIds == null ||
                         audioBank.songVariationIds.Length == audioBank.songIds.Length,
-                        "Audio bank variation IDs align with song IDs.", errors);
+                        "Audio bank variation IDs align with song IDs.", errors, passed);
                 }
 
                 if (audioBank.voiceSongIds != null)
                 {
                     Check(audioBank.voiceSongIds.Length == audioBank.voiceCharacterIds.Length,
-                        "Character voice song and character arrays have matching lengths.", errors);
+                        "Character voice song and character arrays have matching lengths.", errors, passed);
                     Check(audioBank.voiceVariationIds == null ||
                         audioBank.voiceVariationIds.Length == audioBank.voiceSongIds.Length,
-                        "Character voice variation IDs align with voice entries.", errors);
+                        "Character voice variation IDs align with voice entries.", errors, passed);
                     Check(audioBank.voiceClips == null ||
                         audioBank.voiceClips.Length == audioBank.voiceSongIds.Length,
-                        "Character voice clips align with voice entries.", errors);
+                        "Character voice clips align with voice entries.", errors, passed);
                 }
             }
 
             if (audioPlayer != null)
             {
-                Check(audioPlayer.audioBank != null, "Audio player references the VRChat audio bank.", errors);
-                Check(audioPlayer.instrumentalSource != null, "Audio player has an instrumental AudioSource.", errors);
-                Check(audioPlayer.menuMusicSource != null, "Audio player has a menu music AudioSource.", warnings);
-                Check(audioPlayer.previewSource != null, "Audio player has a Freeplay preview AudioSource.", warnings);
-                Check(audioPlayer.soundEffectSource != null, "Audio player has a sound-effect AudioSource.", warnings);
+                Check(audioPlayer.audioBank != null, "Audio player references the VRChat audio bank.", errors, passed);
+                Check(audioPlayer.instrumentalSource != null, "Audio player has an instrumental AudioSource.", errors, passed);
+                Check(audioPlayer.menuMusicSource != null, "Audio player has a menu music AudioSource.", warnings, passed);
+                Check(audioPlayer.previewSource != null, "Audio player has a Freeplay preview AudioSource.", warnings, passed);
+                Check(audioPlayer.soundEffectSource != null, "Audio player has a sound-effect AudioSource.", warnings, passed);
                 if (audioPlayer.audioBank != audioBank && audioBank != null)
                     warnings.Add("Audio player points to a different audio bank than the scene's discovered bank.");
             }
@@ -85,16 +85,16 @@ namespace NovaOS.FNF.Editor
                     chartBank.sustainLengthsMs != null &&
                     chartBank.noteTimesMs.Length == chartBank.noteDirections.Length &&
                     chartBank.noteTimesMs.Length == chartBank.sustainLengthsMs.Length;
-                Check(noteArraysValid, "Chart note timestamps, directions and sustain lengths are aligned.", errors);
+                Check(noteArraysValid, "Chart note timestamps, directions and sustain lengths are aligned.", errors, passed);
 
                 bool chartRangesValid = chartBank.noteStarts != null && chartBank.noteCounts != null &&
                     chartBank.noteStarts.Length == chartBank.noteCounts.Length;
-                Check(chartRangesValid, "Chart start/count arrays are aligned.", errors);
+                Check(chartRangesValid, "Chart start/count arrays are aligned.", errors, passed);
 
                 if (chartBank.eventStarts != null || chartBank.eventCounts != null)
                     Check(chartBank.eventStarts != null && chartBank.eventCounts != null &&
                         chartBank.eventStarts.Length == chartBank.eventCounts.Length,
-                        "Chart event start/count arrays are aligned.", errors);
+                        "Chart event start/count arrays are aligned.", errors, passed);
 
                 if (chartBank.songIds == null || chartBank.songIds.Length == 0)
                     warnings.Add("Chart bank contains no imported charts yet.");
@@ -103,7 +103,7 @@ namespace NovaOS.FNF.Editor
             if (menu != null)
             {
                 Check(menu.screens != null && menu.screens.Length > 0,
-                    "Menu controller has a screen array.", errors);
+                    "Menu controller has a screen array.", errors, passed);
                 if (menu.screens != null)
                 {
                     for (int i = 0; i < menu.screens.Length; i++)
@@ -112,39 +112,39 @@ namespace NovaOS.FNF.Editor
                 }
 
                 Check(menu.gameplayController != null,
-                    "Menu controller references the gameplay controller.", errors);
+                    "Menu controller references the gameplay controller.", errors, passed);
                 Check(menu.inputBindings != null,
-                    "Menu controller references shared input bindings.", warnings);
+                    "Menu controller references shared input bindings.", warnings, passed);
                 Check(menu.menuAudioPlayer != null,
-                    "Menu controller references the audio player for screen music.", warnings);
+                    "Menu controller references the audio player for screen music.", warnings, passed);
             }
 
             if (gameplay != null)
             {
-                Check(gameplay.chartBank != null, "Gameplay references the chart bank.", errors);
-                Check(gameplay.audioPlayer != null, "Gameplay references the audio player.", errors);
+                Check(gameplay.chartBank != null, "Gameplay references the chart bank.", errors, passed);
+                Check(gameplay.audioPlayer != null, "Gameplay references the audio player.", errors, passed);
                 Check(gameplay.notePool != null && gameplay.notePool.Length > 0,
-                    "Gameplay has a non-empty prewarmed note pool.", errors);
+                    "Gameplay has a non-empty prewarmed note pool.", errors, passed);
                 Check(gameplay.laneReceptors != null && gameplay.laneReceptors.Length >= 4,
-                    "Gameplay has at least four player lane receptors.", errors);
+                    "Gameplay has at least four player lane receptors.", errors, passed);
                 if (gameplay.laneReceptors != null && gameplay.laneReceptors.Length < 8)
                     warnings.Add("Fewer than eight receptors are assigned. Opponent notes will be hidden.");
                 Check(gameplay.inputBindings != null,
-                    "Gameplay references the shared input bindings.", warnings);
+                    "Gameplay references the shared input bindings.", warnings, passed);
                 Check(gameplay.beatClock != null,
-                    "Gameplay references the BPM beat clock.", warnings);
+                    "Gameplay references the BPM beat clock.", warnings, passed);
                 Check(gameplay.chartEventRouter != null,
-                    "Gameplay references the chart event router.", warnings);
+                    "Gameplay references the chart event router.", warnings, passed);
                 Check(gameplay.resultsController != null,
-                    "Gameplay references the results controller.", errors);
+                    "Gameplay references the results controller.", errors, passed);
                 Check(gameplay.saveManager != null,
-                    "Gameplay references the persistent save manager.", warnings);
+                    "Gameplay references the persistent save manager.", warnings, passed);
             }
 
             if (eventRouter != null)
             {
-                Check(eventRouter.chartBank != null, "Chart event router references a chart bank.", errors);
-                Check(eventRouter.audioPlayer != null, "Chart event router references the audio player.", errors);
+                Check(eventRouter.chartBank != null, "Chart event router references a chart bank.", errors, passed);
+                Check(eventRouter.audioPlayer != null, "Chart event router references the audio player.", errors, passed);
                 if (eventRouter.bindings == null || eventRouter.bindings.Length == 0)
                     warnings.Add("Chart event router has no scene event bindings yet.");
             }
@@ -152,59 +152,59 @@ namespace NovaOS.FNF.Editor
             if (story != null)
             {
                 Check(story.weekIds != null && story.weekIds.Length > 0,
-                    "Story Mode has imported week definitions.", warnings);
+                    "Story Mode has imported week definitions.", warnings, passed);
                 Check(story.menuController != null,
-                    "Story progression references the menu controller.", errors);
+                    "Story progression references the menu controller.", errors, passed);
             }
 
             if (weekList != null)
             {
                 Check(weekList.storyProgression != null,
-                    "Week list references Story progression.", errors);
+                    "Week list references Story progression.", errors, passed);
                 Check(weekList.weekSlots != null && weekList.weekSlots.Length > 0,
-                    "Week list has at least one prebuilt row slot.", warnings);
+                    "Week list has at least one prebuilt row slot.", warnings, passed);
             }
 
             if (freeplay != null)
             {
                 Check(freeplay.chartBank != null,
-                    "Freeplay list references the chart bank.", errors);
+                    "Freeplay list references the chart bank.", errors, passed);
                 Check(freeplay.menuController != null,
-                    "Freeplay list references the menu controller.", errors);
+                    "Freeplay list references the menu controller.", errors, passed);
                 Check(freeplay.songSlots != null && freeplay.songSlots.Length > 0,
-                    "Freeplay list has at least one prebuilt row slot.", warnings);
+                    "Freeplay list has at least one prebuilt row slot.", warnings, passed);
             }
 
             if (difficulties != null)
             {
                 Check(difficulties.chartBank != null,
-                    "Difficulty list references the chart bank.", errors);
+                    "Difficulty list references the chart bank.", errors, passed);
                 Check(difficulties.menuController != null,
-                    "Difficulty list references the menu controller.", errors);
+                    "Difficulty list references the menu controller.", errors, passed);
                 Check(difficulties.difficultySlots != null && difficulties.difficultySlots.Length > 0,
-                    "Difficulty list has at least one prebuilt row slot.", warnings);
+                    "Difficulty list has at least one prebuilt row slot.", warnings, passed);
             }
 
             if (results != null)
                 Check(results.menuController != null,
-                    "Results screen references the menu controller.", errors);
+                    "Results screen references the menu controller.", errors, passed);
 
             if (saves != null)
             {
                 Check(saves.inputBindings != null,
-                    "Save manager references input bindings.", warnings);
+                    "Save manager references input bindings.", warnings, passed);
                 Check(saves.optionsController != null,
-                    "Save manager references options.", warnings);
+                    "Save manager references options.", warnings, passed);
                 Check(saves.storyProgression != null,
-                    "Save manager references Story progression.", warnings);
+                    "Save manager references Story progression.", warnings, passed);
             }
 
             if (controlsScreen != null)
             {
                 Check(controlsScreen.inputBindings != null,
-                    "Controls screen references the input bindings.", errors);
+                    "Controls screen references the input bindings.", errors, passed);
                 Check(controlsScreen.assignableKeys != null && controlsScreen.assignableKeys.Length > 0,
-                    "Controls screen has a key capture list.", warnings);
+                    "Controls screen has a key capture list.", warnings, passed);
             }
 
             string report = "NovaOS FNF scene validation\n\n" +
@@ -229,16 +229,12 @@ namespace NovaOS.FNF.Editor
             EditorUtility.DisplayDialog("NovaOS FNF Validation", report, "Close");
         }
 
-        private static void Check(bool condition, string message, List<string> errors)
+        private static void Check(bool condition, string message, List<string> failures, List<string> passed)
         {
-            if (condition) return;
-            errors.Add(message);
-        }
-
-        private static void Check(bool condition, string message, List<string> warnings)
-        {
-            if (condition) return;
-            warnings.Add(message);
+            if (condition)
+                passed.Add(message);
+            else
+                failures.Add(message);
         }
     }
 }
