@@ -32,6 +32,12 @@ namespace NovaOS.FNF
         public void ShowResultsWithRecords(string songTitle, string songId, string difficultyId,
             int score, int misses, float accuracy, int maxCombo, bool failed)
         {
+            ShowResultsWithRecords(songTitle, songId, difficultyId, score, misses, accuracy, maxCombo, failed, false);
+        }
+
+        public void ShowResultsWithRecords(string songTitle, string songId, string difficultyId,
+            int score, int misses, float accuracy, int maxCombo, bool failed, bool isNewHighScore)
+        {
             if (songTitleText != null) songTitleText.text = songTitle;
             if (scoreText != null) scoreText.text = score.ToString();
             if (missesText != null) missesText.text = misses.ToString();
@@ -44,7 +50,7 @@ namespace NovaOS.FNF
             if (bestScoreText != null) bestScoreText.text = "BEST SCORE: " + bestScore;
             if (bestAccuracyText != null) bestAccuracyText.text = "BEST ACCURACY: " + bestAccuracy.ToString("F2") + "%";
             if (newRecordText != null)
-                newRecordText.text = score >= bestScore && score > 0 ? "NEW HIGH SCORE!" : "";
+                newRecordText.text = isNewHighScore ? "NEW HIGH SCORE!" : "";
         }
 
         public void ContinuePressed()
@@ -74,6 +80,12 @@ namespace NovaOS.FNF
         {
             if (gameplayController != null && gameplayController.audioPlayer != null)
                 gameplayController.audioPlayer.StopSong();
+            if (storyProgression != null)
+            {
+                storyProgression.storyRunActive = false;
+                storyProgression.waitingForResultsContinue = false;
+                storyProgression.currentWeekIndex = -1;
+            }
             if (menuController != null)
                 menuController.OpenMainMenu();
         }
