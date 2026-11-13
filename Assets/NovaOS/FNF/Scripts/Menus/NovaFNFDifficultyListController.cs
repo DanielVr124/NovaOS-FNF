@@ -18,6 +18,7 @@ namespace NovaOS.FNF
         public Text pageLabel;
 
         private string[] availableDifficulties;
+        private string[] availableVariations;
         private int difficultyCount;
 
         public void BuildForSelectedSong()
@@ -31,8 +32,12 @@ namespace NovaOS.FNF
             }
 
             availableDifficulties = new string[chartBank.difficultyIds.Length];
+            availableVariations = new string[chartBank.difficultyIds.Length];
             difficultyCount = 0;
 
+            // Official FNF stores Erect and Nightmare in the separate "erect"
+            // variation. Collect every variation for this song, then bind each
+            // difficulty button to the variation that actually owns its chart.
             for (int i = 0; i < chartBank.difficultyIds.Length; i++)
             {
                 if (i >= chartBank.songIds.Length) break;
@@ -40,11 +45,21 @@ namespace NovaOS.FNF
 
                 string variation = chartBank.variationIds != null && i < chartBank.variationIds.Length
                     ? chartBank.variationIds[i] : "default";
-                if (variation != menuController.selectedVariationId) continue;
-
                 string difficulty = chartBank.difficultyIds[i];
-                if (string.IsNullOrEmpty(difficulty) || HasDifficulty(difficulty)) continue;
+                if (string.IsNullOrEmpty(difficulty)) continue;
+
+                int existing = FindDifficulty(difficulty);
+                if (existing >= 0)
+                {
+                    // If a difficulty exists in multiple variations, prefer the
+                    // default chart unless the existing entry is already default.
+                    if (availableVariations[existing] != "default" && variation == "default")
+                        availableVariations[existing] = variation;
+                    continue;
+                }
+
                 availableDifficulties[difficultyCount] = difficulty;
+                availableVariations[difficultyCount] = variation;
                 difficultyCount++;
             }
 
@@ -74,7 +89,7 @@ namespace NovaOS.FNF
                         slot.menuController = menuController;
                         slot.actionId = 7;
                         slot.songId = menuController.selectedSongId;
-                        slot.variationId = menuController.selectedVariationId;
+                        slot.variationId = availableVariations[visibleIndices[slotIndex]];
                         slot.difficultyId = availableDifficulties[visibleIndices[slotIndex]];
                         slot.SetLocked(false);
                         actions[slotIndex] = slot;
@@ -92,7 +107,9 @@ namespace NovaOS.FNF
                 if (ratingLabels != null && slotIndex < ratingLabels.Length &&
                     ratingLabels[slotIndex] != null)
                 {
-                    int rating = valid ? FindRating(availableDifficulties[visibleIndices[slotIndex]]) : 0;
+                    int rating = valid ? FindRating(
+                        availableDifficulties[visibleIndices[slotIndex]],
+                        availableVariations[visibleIndices[slotIndex]]) : 0;
                     ratingLabels[slotIndex].text = valid && rating > 0 ? rating + " / 10" : "";
                 }
             }
@@ -103,15 +120,15 @@ namespace NovaOS.FNF
                     Mathf.Min(difficultyCount, difficultySlots.Length) + " AVAILABLE";
         }
 
-        private int FindRating(string difficulty)
+        private int FindRating(string difficulty, string variationId)
         {
-            if (chartBank == null || chartBank.difficultyRatings == null) return 0;
+            if (chartBank == null || chartBank.difficultyRatings == null || chartBank.songIds == null) return 0;
             for (int i = 0; i < chartBank.songIds.Length; i++)
             {
                 if (chartBank.songIds[i] != menuController.selectedSongId) continue;
                 string variation = chartBank.variationIds != null && i < chartBank.variationIds.Length
                     ? chartBank.variationIds[i] : "default";
-                if (variation != menuController.selectedVariationId) continue;
+                if (variation != variationId) continue;
                 if (i < chartBank.difficultyIds.Length && chartBank.difficultyIds[i] == difficulty &&
                     i < chartBank.difficultyRatings.Length)
                     return chartBank.difficultyRatings[i];
@@ -119,11 +136,11 @@ namespace NovaOS.FNF
             return 0;
         }
 
-        private bool HasDifficulty(string difficulty)
+        private int FindDifficulty(string difficulty)
         {
             for (int i = 0; i < difficultyCount; i++)
-                if (availableDifficulties[i] == difficulty) return true;
-            return false;
+                if (availableDifficulties[i] == difficulty) return i;
+            return -1;
         }
 
         private void SortDifficulties()
@@ -138,6 +155,9 @@ namespace NovaOS.FNF
                         string temp = availableDifficulties[j];
                         availableDifficulties[j] = availableDifficulties[j + 1];
                         availableDifficulties[j + 1] = temp;
+                        string tempVariation = availableVariations[j];
+                        availableVariations[j] = availableVariations[j + 1];
+                        availableVariations[j + 1] = tempVariation;
                     }
                 }
             }
@@ -149,7 +169,9 @@ namespace NovaOS.FNF
             if (value == "easy") return 0;
             if (value == "normal") return 1;
             if (value == "hard") return 2;
-            return 3;
+            if (value == "erect") return 3;
+            if (value == "nightmare") return 4;
+            return 5;
         }
 
         private string FormatDifficulty(string value)
