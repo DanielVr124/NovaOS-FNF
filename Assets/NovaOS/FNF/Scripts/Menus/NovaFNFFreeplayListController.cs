@@ -76,7 +76,6 @@ namespace NovaOS.FNF
             }
 
             RebuildVisibleList();
-            if (menuController != null) menuController.SetFreeplayActions(new NovaFNFMenuAction[0]);
         }
 
         public void ShowAllSongs()
