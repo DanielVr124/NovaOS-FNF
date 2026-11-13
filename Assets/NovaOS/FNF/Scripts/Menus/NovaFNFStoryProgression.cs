@@ -126,11 +126,17 @@ namespace NovaOS.FNF
                 waitingForResultsContinue = true;
         }
 
-        public void CancelStoryRun()
+        public void AbandonStoryRun()
         {
             storyRunActive = false;
             waitingForResultsContinue = false;
             currentWeekIndex = -1;
+            currentSongInWeek = 0;
+        }
+
+        public void CancelStoryRun()
+        {
+            AbandonStoryRun();
             if (menuController != null) menuController.OpenStoryMode();
         }
 
