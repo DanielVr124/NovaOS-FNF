@@ -30,11 +30,31 @@ namespace NovaOS.FNF.Editor
         private static void AutoBuildAfterImport()
         {
             if (SessionState.GetBool(AutoBuildKey, false)) return;
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null) return;
             if (!AssetDatabase.IsValidFolder("Assets/NovaOS/FNF")) return;
-            SessionState.SetBool(AutoBuildKey, true);
-            try { BuildInternal(false); }
-            catch (System.Exception e) { Debug.LogError("NovaOS FNF starter scene generation failed: " + e); }
+
+            bool prefabExists = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
+            bool sceneExists = System.IO.File.Exists(ScenePath);
+            if (prefabExists && sceneExists)
+            {
+                SessionState.SetBool(AutoBuildKey, true);
+                return;
+            }
+
+            try
+            {
+                BuildInternal(false);
+                bool generated = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null &&
+                    System.IO.File.Exists(ScenePath);
+                if (!generated)
+                    throw new System.InvalidOperationException("The prefab or test scene was not created.");
+                SessionState.SetBool(AutoBuildKey, true);
+            }
+            catch (System.Exception e)
+            {
+                // Do not permanently suppress setup after a transient import/compile failure.
+                SessionState.SetBool(AutoBuildKey, false);
+                Debug.LogError("NovaOS FNF starter scene generation failed. Use NovaOS/FNF/Setup/Create Drag-and-Drop Game and Test Scene after fixing the error. " + e);
+            }
         }
         private const string Root = "Assets/NovaOS";
         private const string PrefabFolder = Root + "/Prefabs";
