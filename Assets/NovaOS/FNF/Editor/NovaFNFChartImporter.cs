@@ -178,9 +178,21 @@ namespace NovaOS.FNF.Editor
                 EditorSceneManager.MarkSceneDirty(bank.gameObject.scene);
 
             int totalNotes = 0;
-            for (int i = 0; i < charts.Count; i++) totalNotes += charts[i].noteTimes.Count;
+            int erectCharts = 0;
+            int nightmareCharts = 0;
+            int erectVariationCharts = 0;
+            for (int i = 0; i < charts.Count; i++)
+            {
+                totalNotes += charts[i].noteTimes.Count;
+                if (charts[i].variationId == "erect") erectVariationCharts++;
+                if (charts[i].difficultyId == "erect") erectCharts++;
+                if (charts[i].difficultyId == "nightmare") nightmareCharts++;
+            }
             string report = "Chart difficulties imported: " + charts.Count +
                 "\nNotes indexed: " + totalNotes +
+                "\nErect variation charts: " + erectVariationCharts +
+                "\nErect difficulty charts: " + erectCharts +
+                "\nNightmare difficulty charts: " + nightmareCharts +
                 "\nWarnings: " + warnings.Count +
                 "\n\nChart Library: " + ChartRoot;
 
