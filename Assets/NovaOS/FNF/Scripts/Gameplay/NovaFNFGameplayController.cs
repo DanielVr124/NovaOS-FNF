@@ -19,6 +19,7 @@ namespace NovaOS.FNF
         public NovaFNFStoryProgression storyProgression;
         public NovaFNFBeatClock beatClock;
         public NovaFNFChartEventRouter chartEventRouter;
+        public NovaFNFInputBindings inputBindings;
         public NovaFNFSaveManager saveManager;
 
         [Header("Chart selection")]
@@ -198,10 +199,18 @@ namespace NovaOS.FNF
 
             if (!playing || paused) return;
 
-            if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) HitLane(0);
-            if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) HitLane(1);
-            if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) HitLane(2);
-            if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) HitLane(3);
+            if (inputBindings != null)
+            {
+                for (int lane = 0; lane < 4; lane++)
+                    if (inputBindings.LanePressed(lane)) HitLane(lane);
+            }
+            else
+            {
+                if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) HitLane(0);
+                if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) HitLane(1);
+                if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) HitLane(2);
+                if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) HitLane(3);
+            }
 
             UpdateSustains();
 
@@ -209,7 +218,13 @@ namespace NovaOS.FNF
             SpawnUpcomingNotes(songTimeMs);
             UpdateActiveNotes(songTimeMs);
 
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
+            bool backPressed = inputBindings != null
+                ? inputBindings.BackPressed()
+                : Input.GetKeyDown(KeyCode.Escape);
+            bool pausePressed = inputBindings != null
+                ? inputBindings.PausePressed()
+                : Input.GetKeyDown(KeyCode.P);
+            if (backPressed || pausePressed)
                 PauseGame();
 
             if (nextChartNote >= chartNoteEnd && !audioPlayer.IsSongSourcePlaying())
@@ -502,6 +517,8 @@ namespace NovaOS.FNF
 
         private bool IsLaneHeld(int lane)
         {
+            if (inputBindings != null)
+                return externalLaneHeld[lane] || inputBindings.LaneHeld(lane);
             if (lane == 0) return externalLaneHeld[0] || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
             if (lane == 1) return externalLaneHeld[1] || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S);
             if (lane == 2) return externalLaneHeld[2] || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W);
