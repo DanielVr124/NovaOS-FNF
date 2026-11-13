@@ -22,6 +22,8 @@ namespace NovaOS.FNF
         public NovaFNFWeekListController weekListController;
         public NovaFNFFreeplayListController freeplayListController;
         public NovaFNFOptionsController optionsController;
+        public NovaFNFInputBindings inputBindings;
+        public NovaFNFControlsController controlsController;
 
         public override void OnPlayerRestored(VRCPlayerApi player)
         {
@@ -34,6 +36,8 @@ namespace NovaOS.FNF
             if (weekListController != null) weekListController.RefreshLockedStates();
             if (freeplayListController != null) freeplayListController.RefreshFavorites();
             if (optionsController != null) LoadGameplaySettings(optionsController);
+            if (inputBindings != null) LoadKeyBindings(inputBindings);
+            if (controlsController != null) controlsController.RefreshLabels();
         }
 
         public bool SaveSongResult(string songId, string difficultyId, int score, int misses, float accuracy, int maxCombo)
@@ -165,6 +169,31 @@ namespace NovaOS.FNF
             target.menuMusicVolume = PlayerData.GetFloat(local, Prefix + "Settings.MenuVolume");
             target.soundEffectVolume = PlayerData.GetFloat(local, Prefix + "Settings.SFXVolume");
             target.ApplySavedSettings();
+        }
+
+        public void SaveKeyBindings(NovaFNFInputBindings bindings)
+        {
+            VRCPlayerApi local = Networking.LocalPlayer;
+            if (!dataRestored || local == null || bindings == null) return;
+
+            for (int i = 0; i < 17; i++)
+                PlayerData.SetInt(local, Prefix + "Controls.Binding" + i, (int)bindings.GetBinding(i));
+        }
+
+        public void LoadKeyBindings(NovaFNFInputBindings bindings)
+        {
+            VRCPlayerApi local = Networking.LocalPlayer;
+            if (!dataRestored || local == null || bindings == null) return;
+
+            string firstKey = Prefix + "Controls.Binding0";
+            if (!PlayerData.HasKey(local, firstKey)) return;
+
+            for (int i = 0; i < 17; i++)
+            {
+                string key = Prefix + "Controls.Binding" + i;
+                if (PlayerData.HasKey(local, key))
+                    bindings.SetBinding(i, (KeyCode)PlayerData.GetInt(local, key));
+            }
         }
 
         private string BuildRecordStem(string songId, string difficultyId)
