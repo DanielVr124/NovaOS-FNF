@@ -191,6 +191,14 @@ namespace NovaOS.FNF
             ShowScreen(gameplayScreenIndex, true);
             if (menuAudioPlayer != null) menuAudioPlayer.StopMenuMusic();
             gameplayController.StartSong();
+            if (!gameplayController.countdownActive && !gameplayController.playing)
+            {
+                if (storyProgression != null && storyProgression.storyRunActive)
+                    storyProgression.CancelStoryRun();
+                else
+                    OpenFreeplay();
+                return;
+            }
             PlayUiSound(confirmSound);
         }
 
