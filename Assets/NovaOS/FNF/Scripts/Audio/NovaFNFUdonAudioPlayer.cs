@@ -26,6 +26,7 @@ namespace NovaOS.FNF
         [Range(0f, 0.5f)] public float vocalResyncThreshold = 0.12f;
 
         public string currentSongId = "";
+        public string selectedVocalCharacterId = "bf";
         public bool songLoaded;
         public bool songPaused;
 
@@ -53,6 +54,11 @@ namespace NovaOS.FNF
                 float safeTime = Mathf.Clamp(vocalsSource.time + drift, 0f, vocalsSource.clip.length);
                 vocalsSource.time = safeTime;
             }
+        }
+
+        public void SetVocalCharacter(string characterId)
+        {
+            selectedVocalCharacterId = characterId;
         }
 
         public bool PlaySong(string songId)
@@ -87,8 +93,8 @@ namespace NovaOS.FNF
             instrumentalSource.volume = instrumentalVolume;
             instrumentalSource.loop = false;
 
-            AudioClip vocal = null;
-            if (audioBank.vocals != null && index < audioBank.vocals.Length)
+            AudioClip vocal = audioBank.GetVoiceClip(songId, selectedVocalCharacterId);
+            if (vocal == null && audioBank.vocals != null && index < audioBank.vocals.Length)
                 vocal = audioBank.vocals[index];
 
             vocalsSource.clip = vocal;
