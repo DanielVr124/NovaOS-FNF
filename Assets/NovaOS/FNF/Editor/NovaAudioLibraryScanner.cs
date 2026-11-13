@@ -26,10 +26,25 @@ namespace NovaOS.FNF.Editor
         private static void AutoScanAfterPackageImport()
         {
             if (SessionState.GetBool(AutoScanSessionKey, false)) return;
-            SessionState.SetBool(AutoScanSessionKey, true);
             if (!AssetDatabase.IsValidFolder(AudioRoot)) return;
-            if (AssetDatabase.LoadAssetAtPath<NovaAudioCatalog>(CatalogPath) != null) return;
-            ScanAndBuild(false);
+
+            if (AssetDatabase.LoadAssetAtPath<NovaAudioCatalog>(CatalogPath) != null)
+            {
+                SessionState.SetBool(AutoScanSessionKey, true);
+                return;
+            }
+
+            try
+            {
+                ScanAndBuild(false);
+                if (AssetDatabase.LoadAssetAtPath<NovaAudioCatalog>(CatalogPath) != null)
+                    SessionState.SetBool(AutoScanSessionKey, true);
+            }
+            catch (Exception exception)
+            {
+                // Leave the session flag clear so a later domain reload can retry.
+                Debug.LogError("NovaOS automatic audio scan failed: " + exception);
+            }
         }
 
         private const string AudioRoot = "Assets/NovaOS/AudioLibrary";
