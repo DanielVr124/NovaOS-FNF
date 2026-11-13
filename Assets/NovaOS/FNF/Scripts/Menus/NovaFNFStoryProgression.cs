@@ -10,6 +10,7 @@ namespace NovaOS.FNF
     public class NovaFNFStoryProgression : UdonSharpBehaviour
     {
         public NovaFNFMenuController menuController;
+        public NovaFNFSaveManager saveManager;
         public string[] weekIds;
         public string[] weekTitles;
         public int[] weekSongStarts;
@@ -27,6 +28,12 @@ namespace NovaOS.FNF
         public int currentSongInWeek;
         public bool storyRunActive;
         public bool waitingForResultsContinue;
+
+        public void RestoreUnlockCount(int count)
+        {
+            int maximum = weekIds == null ? Mathf.Max(1, count) : Mathf.Max(1, weekIds.Length);
+            unlockedWeekCount = Mathf.Clamp(count, 1, maximum);
+        }
 
         public void SelectWeek(int weekIndex)
         {
@@ -116,6 +123,7 @@ namespace NovaOS.FNF
             if (currentWeekIndex + 1 == unlockedWeekCount && unlockedWeekCount < weekIds.Length)
                 unlockedWeekCount++;
 
+            if (saveManager != null) saveManager.SaveStoryUnlocks(unlockedWeekCount);
             if (menuController != null) menuController.OpenStoryMode();
         }
     }
