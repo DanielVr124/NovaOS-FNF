@@ -126,10 +126,26 @@ namespace NovaOS.FNF.Editor
                     Check(rangesInBounds, "All chart note ranges remain inside the flattened note arrays.", errors, passed);
                 }
 
+                bool bpmArraysAligned = chartBank.bpmStarts != null &&
+                    chartBank.bpmCounts != null &&
+                    chartBank.bpmStarts.Length == chartBank.bpmCounts.Length &&
+                    chartBank.bpmChangeTimesMs != null &&
+                    chartBank.bpmValues != null &&
+                    chartBank.bpmChangeTimesMs.Length == chartBank.bpmValues.Length;
+                Check(bpmArraysAligned, "BPM change arrays and per-chart ranges are aligned.", errors, passed);
+
                 if (chartBank.eventStarts != null || chartBank.eventCounts != null)
-                    Check(chartBank.eventStarts != null && chartBank.eventCounts != null &&
-                        chartBank.eventStarts.Length == chartBank.eventCounts.Length,
-                        "Chart event start/count arrays are aligned.", errors, passed);
+                {
+                    bool eventArraysAligned = chartBank.eventStarts != null &&
+                        chartBank.eventCounts != null &&
+                        chartBank.eventStarts.Length == chartBank.eventCounts.Length &&
+                        chartBank.eventTimesMs != null &&
+                        chartBank.eventKinds != null &&
+                        chartBank.eventValuesJson != null &&
+                        chartBank.eventTimesMs.Length == chartBank.eventKinds.Length &&
+                        chartBank.eventTimesMs.Length == chartBank.eventValuesJson.Length;
+                    Check(eventArraysAligned, "Chart event arrays and per-chart ranges are aligned.", errors, passed);
+                }
 
                 if (chartBank.songIds == null || chartBank.songIds.Length == 0)
                     warnings.Add("Chart bank contains no imported charts yet.");
