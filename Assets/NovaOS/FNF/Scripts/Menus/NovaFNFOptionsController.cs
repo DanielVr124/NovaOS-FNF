@@ -98,6 +98,7 @@ namespace NovaOS.FNF
         {
             reducedMotion = value;
             ApplyPresentationSettings();
+            SaveCurrentSettings();
         }
 
         public void SetInstrumentalVolume(float value)
