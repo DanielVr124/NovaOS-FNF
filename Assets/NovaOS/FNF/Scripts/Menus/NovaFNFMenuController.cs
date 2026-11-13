@@ -180,6 +180,12 @@ namespace NovaOS.FNF
             PlayUiSound(confirmSound);
         }
 
+        public void OpenGameplay()
+        {
+            ShowScreen(gameplayScreenIndex, true);
+            if (menuAudioPlayer != null) menuAudioPlayer.StopMenuMusic();
+        }
+
         public void OpenResults()
         {
             ShowScreen(resultsScreenIndex, true);
