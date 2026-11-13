@@ -1,0 +1,38 @@
+name: Build NovaOS-FNF Unity Package
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout NovaOS-FNF
+        uses: actions/checkout@v4
+
+      - name: Checkout official FNF assets
+        uses: actions/checkout@v4
+        with:
+          repository: FunkinCrew/funkin.assets
+          ref: main
+          path: build/funkin.assets
+
+      - name: Build Unity package archive
+        run: |
+          python3 tools/package/build_unitypackage.py \
+            --source Assets/NovaOS/FNF \
+            --official-assets build/funkin.assets \
+            --output dist/NovaOS-FNF.unitypackage
+
+      - name: Upload Unity package
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovaOS-FNF-UnityPackage
+          path: dist/NovaOS-FNF.unitypackage
+          if-no-files-found: error
+          retention-days: 30
