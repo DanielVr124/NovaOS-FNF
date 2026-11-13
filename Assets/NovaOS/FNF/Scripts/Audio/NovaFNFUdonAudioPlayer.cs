@@ -15,12 +15,14 @@ namespace NovaOS.FNF
         public AudioSource vocalsSource;
         public AudioSource menuMusicSource;
         public AudioSource menuMusicSecondarySource;
+        public AudioSource previewSource;
         public AudioSource soundEffectSource;
 
         [Header("Playback")]
         [Range(0f, 1f)] public float instrumentalVolume = 1f;
         [Range(0f, 1f)] public float vocalsVolume = 1f;
         [Range(0f, 1f)] public float menuMusicVolume = 1f;
+        [Range(0f, 1f)] public float previewVolume = 0.75f;
         [Range(0f, 1f)] public float soundEffectVolume = 1f;
         [Range(0f, 3f)] public float menuMusicFadeSeconds = 0.45f;
         [Range(0f, 0.5f)] public float vocalResyncThreshold = 0.12f;
@@ -34,6 +36,8 @@ namespace NovaOS.FNF
         private AudioSource incomingMenuSource;
         private float menuFadeProgress;
         private bool menuFadeActive;
+        private float previewEndSeconds;
+        private bool previewActive;
 
         private void Start()
         {
@@ -43,6 +47,7 @@ namespace NovaOS.FNF
         private void Update()
         {
             UpdateMenuMusicFade();
+            UpdatePreview();
             if (!songLoaded || songPaused) return;
             if (instrumentalSource == null || vocalsSource == null) return;
             if (!instrumentalSource.isPlaying || !vocalsSource.isPlaying) return;
@@ -89,6 +94,7 @@ namespace NovaOS.FNF
             }
 
             StopSong();
+            StopSongPreview();
             instrumentalSource.clip = instrumental;
             instrumentalSource.volume = instrumentalVolume;
             instrumentalSource.loop = false;
@@ -137,6 +143,7 @@ namespace NovaOS.FNF
         {
             if (instrumentalSource != null) instrumentalSource.Stop();
             if (vocalsSource != null) vocalsSource.Stop();
+            StopSongPreview();
             songLoaded = false;
             songPaused = false;
             currentSongId = "";
@@ -159,6 +166,43 @@ namespace NovaOS.FNF
         {
             if (!songLoaded || instrumentalSource == null) return 0f;
             return instrumentalSource.time;
+        }
+
+        public void PlaySongPreview(string songId, float startSeconds, float endSeconds)
+        {
+            if (audioBank == null || previewSource == null) return;
+            int index = audioBank.FindSongIndex(songId);
+            if (index < 0 || audioBank.instrumentals == null ||
+                index >= audioBank.instrumentals.Length || audioBank.instrumentals[index] == null)
+                return;
+
+            AudioClip clip = audioBank.instrumentals[index];
+            float start = Mathf.Clamp(startSeconds, 0f, Mathf.Max(0f, clip.length - 0.01f));
+            float end = endSeconds > start
+                ? Mathf.Clamp(endSeconds, start + 0.1f, clip.length)
+                : Mathf.Min(clip.length, start + 12f);
+
+            StopSongPreview();
+            previewSource.clip = clip;
+            previewSource.loop = false;
+            previewSource.volume = previewVolume;
+            previewSource.time = start;
+            previewEndSeconds = end;
+            previewActive = true;
+            previewSource.Play();
+        }
+
+        public void StopSongPreview()
+        {
+            previewActive = false;
+            if (previewSource != null) previewSource.Stop();
+        }
+
+        private void UpdatePreview()
+        {
+            if (!previewActive || previewSource == null) return;
+            if (!previewSource.isPlaying || previewSource.time >= previewEndSeconds)
+                StopSongPreview();
         }
 
         public void PlayMenuMusic(string id)
