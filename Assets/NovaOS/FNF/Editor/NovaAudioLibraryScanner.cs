@@ -57,7 +57,8 @@ namespace NovaOS.FNF.Editor
                     continue;
                 }
 
-                string songId = StripRoleSuffix(fileName, out AudioRole role);
+                string characterId;
+                string songId = StripRoleSuffix(fileName, out AudioRole role, out characterId);
                 if (string.IsNullOrEmpty(songId) && role != AudioRole.Unknown)
                     songId = GetSongFolderName(path);
 
@@ -82,12 +83,11 @@ namespace NovaOS.FNF.Editor
                 }
                 else if (role == AudioRole.Vocals)
                 {
-                    if (song.vocals == null) song.vocals = clip;
-                    else warnings.Add("Duplicate vocals for '" + song.id + "': " + path);
+                    AddVoiceTrack(song, characterId, clip, path, warnings);
                 }
                 else
                 {
-                    // A plain filename is an instrumental only when no explicit Inst track exists.
+                    // A plain filename is treated as the instrumental by default.
                     if (song.instrumental == null) song.instrumental = clip;
                     else warnings.Add("Extra unclassified audio for '" + song.id + "': " + path);
                 }
@@ -105,23 +105,35 @@ namespace NovaOS.FNF.Editor
                 .OrderBy(s => s.id, StringComparer.OrdinalIgnoreCase)
                 .Select(s => new NovaAudioCatalog.SongAudio
                 {
-                    songId = NovaAudioCatalog.NormalizeId(s.id),
+                    songId = s.id,
                     instrumental = s.instrumental,
-                    vocals = s.vocals
+                    vocals = s.defaultVocals != null ? s.defaultVocals : s.firstVoice
                 }).ToList();
 
+            var voices = new List<NovaAudioCatalog.VoiceAudio>();
             foreach (MutableSong song in songMap.Values)
             {
                 if (song.instrumental == null) warnings.Add("Missing instrumental: " + song.id);
-                if (song.vocals == null) warnings.Add("Missing vocals (instrumental-only track): " + song.id);
+                if (song.voices.Count == 0) warnings.Add("Missing vocals: " + song.id);
+
+                foreach (VoiceEntry voice in song.voices)
+                {
+                    voices.Add(new NovaAudioCatalog.VoiceAudio
+                    {
+                        songId = song.id,
+                        characterId = voice.characterId,
+                        clip = voice.clip
+                    });
+                }
             }
 
-            catalog.EditorReplaceData(songs, menu, effects);
+            catalog.EditorReplaceData(songs, voices, menu, effects);
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
             string report = "Songs indexed: " + songs.Count +
+                "\nCharacter vocal tracks: " + voices.Count +
                 "\nMenu tracks: " + menu.Count +
                 "\nSound effects: " + effects.Count +
                 "\nWarnings: " + warnings.Count;
@@ -132,6 +144,25 @@ namespace NovaOS.FNF.Editor
                 Debug.Log("NovaOS audio scan completed.\n" + report);
 
             EditorUtility.DisplayDialog("NovaOS Audio Library", report + "\n\nCatalog: " + CatalogPath, "Done");
+        }
+
+        private static void AddVoiceTrack(MutableSong song, string characterId, AudioClip clip, string path, List<string> warnings)
+        {
+            string normalizedCharacter = NovaAudioCatalog.NormalizeId(characterId);
+            if (string.IsNullOrEmpty(normalizedCharacter)) normalizedCharacter = "default";
+
+            for (int i = 0; i < song.voices.Count; i++)
+            {
+                if (song.voices[i].characterId == normalizedCharacter)
+                {
+                    warnings.Add("Duplicate vocal track for '" + song.id + "' character '" + normalizedCharacter + "': " + path);
+                    return;
+                }
+            }
+
+            song.voices.Add(new VoiceEntry { characterId = normalizedCharacter, clip = clip });
+            if (normalizedCharacter == "default") song.defaultVocals = clip;
+            if (song.firstVoice == null) song.firstVoice = clip;
         }
 
         private static void AddNamedAudio(List<NovaAudioCatalog.NamedAudio> target, string fileName, AudioClip clip, List<string> warnings, string category)
@@ -165,10 +196,11 @@ namespace NovaOS.FNF.Editor
             return "";
         }
 
-        private static string StripRoleSuffix(string fileName, out AudioRole role)
+        private static string StripRoleSuffix(string fileName, out AudioRole role, out string characterId)
         {
             string normalized = fileName.Trim().Replace('_', '-').Replace(' ', '-');
             string lower = normalized.ToLowerInvariant();
+            characterId = "default";
 
             for (int i = 0; i < InstrumentalTokens.Length; i++)
             {
@@ -186,19 +218,39 @@ namespace NovaOS.FNF.Editor
                 }
             }
 
+            // Official FNF song folders can contain Voices-bf.ogg, Voices-pico.ogg, etc.
+            // Also support SongName-Voices-bf.ogg.
             for (int i = 0; i < VocalTokens.Length; i++)
             {
                 string token = VocalTokens[i];
-                string suffix = "-" + token;
+                string prefix = token + "-";
+                string suffix = "-" + token + "-";
+
+                if (lower.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    role = AudioRole.Vocals;
+                    characterId = normalized.Substring(prefix.Length);
+                    return "";
+                }
+
+                int suffixIndex = lower.LastIndexOf(suffix, StringComparison.Ordinal);
+                if (suffixIndex >= 0 && suffixIndex + suffix.Length < normalized.Length)
+                {
+                    role = AudioRole.Vocals;
+                    characterId = normalized.Substring(suffixIndex + suffix.Length);
+                    return normalized.Substring(0, suffixIndex);
+                }
+
+                string plainSuffix = "-" + token;
                 if (lower == token)
                 {
                     role = AudioRole.Vocals;
                     return "";
                 }
-                if (lower.EndsWith(suffix, StringComparison.Ordinal))
+                if (lower.EndsWith(plainSuffix, StringComparison.Ordinal))
                 {
                     role = AudioRole.Vocals;
-                    return normalized.Substring(0, normalized.Length - suffix.Length);
+                    return normalized.Substring(0, normalized.Length - plainSuffix.Length);
                 }
             }
 
@@ -221,7 +273,15 @@ namespace NovaOS.FNF.Editor
         {
             public string id;
             public AudioClip instrumental;
-            public AudioClip vocals;
+            public AudioClip defaultVocals;
+            public AudioClip firstVoice;
+            public List<VoiceEntry> voices = new List<VoiceEntry>();
+        }
+
+        private sealed class VoiceEntry
+        {
+            public string characterId;
+            public AudioClip clip;
         }
     }
 }
