@@ -33,41 +33,47 @@ namespace NovaOS.FNF
 
         public bool LanePressed(int lane)
         {
-            return Input.GetKeyDown(GetLanePrimary(lane)) ||
-                Input.GetKeyDown(GetLaneSecondary(lane));
+            KeyCode primary = GetLanePrimary(lane);
+            KeyCode secondary = GetLaneSecondary(lane);
+            return (primary != KeyCode.None && Input.GetKeyDown(primary)) ||
+                (secondary != KeyCode.None && Input.GetKeyDown(secondary));
         }
 
         public bool LaneHeld(int lane)
         {
-            return Input.GetKey(GetLanePrimary(lane)) ||
-                Input.GetKey(GetLaneSecondary(lane));
+            KeyCode primary = GetLanePrimary(lane);
+            KeyCode secondary = GetLaneSecondary(lane);
+            return (primary != KeyCode.None && Input.GetKey(primary)) ||
+                (secondary != KeyCode.None && Input.GetKey(secondary));
         }
 
         public bool MenuUpPressed()
         {
-            return Input.GetKeyDown(menuUpPrimary) || Input.GetKeyDown(menuUpSecondary);
+            return (menuUpPrimary != KeyCode.None && Input.GetKeyDown(menuUpPrimary)) ||
+                (menuUpSecondary != KeyCode.None && Input.GetKeyDown(menuUpSecondary));
         }
 
         public bool MenuDownPressed()
         {
-            return Input.GetKeyDown(menuDownPrimary) || Input.GetKeyDown(menuDownSecondary);
+            return (menuDownPrimary != KeyCode.None && Input.GetKeyDown(menuDownPrimary)) ||
+                (menuDownSecondary != KeyCode.None && Input.GetKeyDown(menuDownSecondary));
         }
 
         public bool AcceptPressed()
         {
-            return Input.GetKeyDown(acceptPrimary) ||
-                Input.GetKeyDown(acceptSecondary) ||
-                Input.GetKeyDown(acceptTertiary);
+            return (acceptPrimary != KeyCode.None && Input.GetKeyDown(acceptPrimary)) ||
+                (acceptSecondary != KeyCode.None && Input.GetKeyDown(acceptSecondary)) ||
+                (acceptTertiary != KeyCode.None && Input.GetKeyDown(acceptTertiary));
         }
 
         public bool BackPressed()
         {
-            return Input.GetKeyDown(back);
+            return back != KeyCode.None && Input.GetKeyDown(back);
         }
 
         public bool PausePressed()
         {
-            return Input.GetKeyDown(pause);
+            return pause != KeyCode.None && Input.GetKeyDown(pause);
         }
 
         public KeyCode GetBinding(int index)
