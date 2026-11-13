@@ -13,6 +13,7 @@ namespace NovaOS.FNF
         public NovaFNFFreeplayListController freeplayList;
         public NovaFNFSaveManager saveManager;
         public string songId;
+        public string variationId = "default";
         public Text iconText;
         public Image iconImage;
         public Color favoriteColor = Color.yellow;
@@ -21,13 +22,14 @@ namespace NovaOS.FNF
         public void OnPressed()
         {
             if (freeplayList == null || saveManager == null || string.IsNullOrEmpty(songId)) return;
-            freeplayList.ToggleFavorite(songId);
+            freeplayList.ToggleFavorite(songId, variationId);
         }
 
         public void Refresh()
         {
+            string favoriteKey = songId + "-" + variationId;
             bool favorite = saveManager != null && !string.IsNullOrEmpty(songId) &&
-                saveManager.IsFavorite(songId);
+                saveManager.IsFavorite(favoriteKey);
 
             if (iconText != null) iconText.text = favorite ? "★" : "☆";
             if (iconImage != null) iconImage.color = favorite ? favoriteColor : normalColor;
