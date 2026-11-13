@@ -39,5 +39,7 @@ namespace NovaOS.FNF
         public TextAsset animateAtlasJson;
         public TextAsset spriteMapJson;
         public Texture2D spriteMapTexture;
+        public TextAsset sparrowAtlasXml;
+        public Texture2D sparrowTexture;
     }
 }
