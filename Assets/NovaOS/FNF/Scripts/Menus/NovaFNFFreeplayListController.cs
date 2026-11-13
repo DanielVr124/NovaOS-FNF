@@ -64,15 +64,33 @@ namespace NovaOS.FNF
                 string songId = chartBank.songIds[i];
                 string variationId = (chartBank.variationIds != null && i < chartBank.variationIds.Length)
                     ? chartBank.variationIds[i] : "default";
-                if (string.IsNullOrEmpty(songId) || HasSongVariation(songId, variationId)) continue;
+                if (string.IsNullOrEmpty(songId)) continue;
+
+                // A song appears once in Freeplay. Its alternate variations
+                // (Erect/Pico/etc.) are exposed by the difficulty selector.
+                int existingSong = FindSong(songId);
+                string songName = (chartBank.songNames != null && i < chartBank.songNames.Length)
+                    ? chartBank.songNames[i] : songId;
+                string artist = (chartBank.artists != null && i < chartBank.artists.Length)
+                    ? chartBank.artists[i] : "";
+
+                if (existingSong >= 0)
+                {
+                    // Prefer the default variation for the row's display metadata.
+                    if (uniqueVariations[existingSong] != "default" && variationId == "default")
+                    {
+                        uniqueSongNames[existingSong] = songName;
+                        uniqueArtists[existingSong] = artist;
+                        uniqueVariations[existingSong] = variationId;
+                    }
+                    continue;
+                }
 
                 uniqueSongIds[songCount] = songId;
-                uniqueSongNames[songCount] = (chartBank.songNames != null && i < chartBank.songNames.Length)
-                    ? chartBank.songNames[i] : songId;
-                uniqueArtists[songCount] = (chartBank.artists != null && i < chartBank.artists.Length)
-                    ? chartBank.artists[i] : "";
+                uniqueSongNames[songCount] = songName;
+                uniqueArtists[songCount] = artist;
                 uniqueVariations[songCount] = variationId;
-                defaultDifficulties[songCount] = FindPreferredDifficulty(songId, uniqueVariations[songCount]);
+                defaultDifficulties[songCount] = FindPreferredDifficulty(songId, variationId);
                 songCount++;
             }
 
@@ -230,11 +248,11 @@ namespace NovaOS.FNF
             RefreshPage();
         }
 
-        private bool HasSongVariation(string songId, string variationId)
+        private int FindSong(string songId)
         {
             for (int i = 0; i < songCount; i++)
-                if (uniqueSongIds[i] == songId && uniqueVariations[i] == variationId) return true;
-            return false;
+                if (uniqueSongIds[i] == songId) return i;
+            return -1;
         }
 
         private string FavoriteKey(string songId, string variationId)
