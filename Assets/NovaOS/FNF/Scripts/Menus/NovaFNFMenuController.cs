@@ -40,6 +40,8 @@ namespace NovaOS.FNF
 
         [Header("Gameplay handoff")]
         public NovaFNFGameplayController gameplayController;
+        public NovaFNFStoryProgression storyProgression;
+        public int selectedWeekIndex;
         public string selectedSongId = "";
         public string selectedVariationId = "default";
         public string selectedDifficultyId = "normal";
@@ -158,6 +160,12 @@ namespace NovaOS.FNF
             }
         }
 
+        public void SetSelectedWeek(int weekIndex)
+        {
+            selectedWeekIndex = weekIndex;
+            if (storyProgression != null) storyProgression.SelectWeek(weekIndex);
+        }
+
         public void SetSelectedSong(string songId)
         {
             selectedSongId = songId;
@@ -219,6 +227,7 @@ namespace NovaOS.FNF
             else if (actionId == 8) OpenMainMenu();
             else if (actionId == 9) OpenResults();
             else if (actionId == 10) OpenTitle();
+            else if (actionId == 11 && storyProgression != null) storyProgression.BeginSelectedWeek();
         }
 
         private void ShowScreen(int screenIndex, bool pushHistory)
