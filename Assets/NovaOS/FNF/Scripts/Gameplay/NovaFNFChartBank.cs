@@ -33,28 +33,34 @@ namespace NovaOS.FNF
         public float[] bpmChangeTimesMs;
         public float[] bpmValues;
 
-        public int FindChartIndex(string songId, string difficultyId)
+        public int FindChartIndex(string songId, string variationId, string difficultyId)
         {
             string wantedSong = NormalizeId(songId);
+            string wantedVariation = NormalizeId(variationId);
             string wantedDifficulty = NormalizeId(difficultyId);
-            if (chartKeys == null) return -1;
+            if (chartKeys == null || songIds == null || variationIds == null || difficultyIds == null) return -1;
 
             for (int i = 0; i < chartKeys.Length; i++)
             {
-                if (i >= songIds.Length || i >= difficultyIds.Length) break;
+                if (i >= songIds.Length || i >= variationIds.Length || i >= difficultyIds.Length) break;
                 if (NormalizeId(songIds[i]) == wantedSong &&
+                    NormalizeId(variationIds[i]) == wantedVariation &&
                     NormalizeId(difficultyIds[i]) == wantedDifficulty)
                     return i;
             }
             return -1;
         }
 
-        public int FindFirstDifficulty(string songId)
+        public int FindFirstDifficulty(string songId, string variationId)
         {
             string wantedSong = NormalizeId(songId);
-            if (songIds == null) return -1;
+            string wantedVariation = NormalizeId(variationId);
+            if (songIds == null || variationIds == null) return -1;
             for (int i = 0; i < songIds.Length; i++)
-                if (NormalizeId(songIds[i]) == wantedSong) return i;
+                if (i < variationIds.Length &&
+                    NormalizeId(songIds[i]) == wantedSong &&
+                    NormalizeId(variationIds[i]) == wantedVariation)
+                    return i;
             return -1;
         }
 
