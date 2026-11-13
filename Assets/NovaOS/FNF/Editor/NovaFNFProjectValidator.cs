@@ -163,6 +163,10 @@ namespace NovaOS.FNF.Editor
                             missingAudio++;
                             warnings.Add("No imported audio for chart: " + songId + " (" + variation + ")");
                         }
+                        else if (variation == "erect" && audioBank.FindExactSongIndex(songId, variation) < 0)
+                        {
+                            warnings.Add("Erect chart is falling back to the default instrumental instead of an exact Erect remix: " + songId);
+                        }
                     }
                     Check(missingAudio == 0,
                         "Every imported chart variation has a matching instrumental audio reference.",
@@ -243,6 +247,8 @@ namespace NovaOS.FNF.Editor
                     "Freeplay list references the menu controller.", errors, passed);
                 Check(freeplay.songSlots != null && freeplay.songSlots.Length > 0,
                     "Freeplay list has at least one prebuilt row slot.", warnings, passed);
+                Check(menu != null && menu.freeplayList == freeplay,
+                    "Menu controller refreshes the populated Freeplay list on entry.", warnings, passed);
             }
 
             if (difficulties != null)
