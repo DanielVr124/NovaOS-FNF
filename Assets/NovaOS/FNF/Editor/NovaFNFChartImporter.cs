@@ -116,6 +116,24 @@ namespace NovaOS.FNF.Editor
                         record.bpmTimes.AddRange(bpmTimes);
                         record.bpmValues.AddRange(bpmValues);
 
+                        List<object> rawEvents = AsArray(GetValue(chart, "events"));
+                        if (rawEvents != null)
+                        {
+                            for (int eventIndex = 0; eventIndex < rawEvents.Count; eventIndex++)
+                            {
+                                Dictionary<string, object> rawEvent = AsObject(rawEvents[eventIndex]);
+                                if (rawEvent == null) continue;
+                                float eventTime = GetNumber(rawEvent, "t", -1f);
+                                string eventKind = GetString(rawEvent, "e", "");
+                                if (eventTime < 0f || string.IsNullOrEmpty(eventKind)) continue;
+
+                                record.eventTimes.Add(eventTime);
+                                record.eventKinds.Add(eventKind);
+                                record.eventValuesJson.Add(SerializeJson(GetValue(rawEvent, "v")));
+                            }
+                        }
+                        record.SortEvents();
+
                         for (int noteIndex = 0; noteIndex < rawNotes.Count; noteIndex++)
                         {
                             Dictionary<string, object> rawNote = AsObject(rawNotes[noteIndex]);
@@ -190,6 +208,11 @@ namespace NovaOS.FNF.Editor
             List<string> allKinds = new List<string>();
             List<float> allBpmTimes = new List<float>();
             List<float> allBpmValues = new List<float>();
+            List<int> eventStarts = new List<int>();
+            List<int> eventCounts = new List<int>();
+            List<float> allEventTimes = new List<float>();
+            List<string> allEventKinds = new List<string>();
+            List<string> allEventValues = new List<string>();
 
             for (int i = 0; i < charts.Count; i++)
             {
@@ -217,6 +240,12 @@ namespace NovaOS.FNF.Editor
                 bpmCounts.Add(chart.bpmTimes.Count);
                 allBpmTimes.AddRange(chart.bpmTimes);
                 allBpmValues.AddRange(chart.bpmValues);
+
+                eventStarts.Add(allEventTimes.Count);
+                eventCounts.Add(chart.eventTimes.Count);
+                allEventTimes.AddRange(chart.eventTimes);
+                allEventKinds.AddRange(chart.eventKinds);
+                allEventValues.AddRange(chart.eventValuesJson);
             }
 
             SerializedObject serialized = new SerializedObject(bank);
@@ -241,6 +270,11 @@ namespace NovaOS.FNF.Editor
             SetStrings(serialized, "noteKinds", allKinds);
             SetFloats(serialized, "bpmChangeTimesMs", allBpmTimes);
             SetFloats(serialized, "bpmValues", allBpmValues);
+            SetInts(serialized, "eventStarts", eventStarts);
+            SetInts(serialized, "eventCounts", eventCounts);
+            SetFloats(serialized, "eventTimesMs", allEventTimes);
+            SetStrings(serialized, "eventKinds", allEventKinds);
+            SetStrings(serialized, "eventValuesJson", allEventValues);
             serialized.ApplyModifiedProperties();
         }
 
@@ -359,6 +393,43 @@ namespace NovaOS.FNF.Editor
             catch { return fallback; }
         }
 
+        private static string SerializeJson(object value)
+        {
+            if (value == null) return "null";
+            if (value is string) return "\"" + EscapeJson((string)value) + "\"";
+            if (value is bool) return (bool)value ? "true" : "false";
+            if (value is double || value is float || value is int || value is long || value is decimal)
+                return Convert.ToString(value, CultureInfo.InvariantCulture);
+
+            Dictionary<string, object> dictionary = AsObject(value);
+            if (dictionary != null)
+            {
+                List<string> parts = new List<string>();
+                foreach (KeyValuePair<string, object> pair in dictionary)
+                    parts.Add("\"" + EscapeJson(pair.Key) + "\":" + SerializeJson(pair.Value));
+                return "{" + string.Join(",", parts.ToArray()) + "}";
+            }
+
+            List<object> array = AsArray(value);
+            if (array != null)
+            {
+                List<string> parts = new List<string>();
+                for (int i = 0; i < array.Count; i++)
+                    parts.Add(SerializeJson(array[i]));
+                return "[" + string.Join(",", parts.ToArray()) + "]";
+            }
+
+            return "null";
+        }
+
+        private static string EscapeJson(string value)
+        {
+            if (value == null) return "";
+            return value.Replace("\\", "\\\\").Replace("\"", "\\\"")
+                .Replace("\r", "\\r").Replace("\n", "\\n")
+                .Replace("\t", "\\t").Replace("\b", "\\b").Replace("\f", "\\f");
+        }
+
         private static Dictionary<string, object> AsObject(object value)
         {
             return value as Dictionary<string, object>;
@@ -388,6 +459,28 @@ namespace NovaOS.FNF.Editor
             public List<string> noteKinds = new List<string>();
             public List<float> bpmTimes = new List<float>();
             public List<float> bpmValues = new List<float>();
+            public List<float> eventTimes = new List<float>();
+            public List<string> eventKinds = new List<string>();
+            public List<string> eventValuesJson = new List<string>();
+
+            public void SortEvents()
+            {
+                List<int> order = Enumerable.Range(0, eventTimes.Count)
+                    .OrderBy(index => eventTimes[index]).ToList();
+                List<float> sortedTimes = new List<float>();
+                List<string> sortedKinds = new List<string>();
+                List<string> sortedValues = new List<string>();
+                for (int i = 0; i < order.Count; i++)
+                {
+                    int index = order[i];
+                    sortedTimes.Add(eventTimes[index]);
+                    sortedKinds.Add(eventKinds[index]);
+                    sortedValues.Add(eventValuesJson[index]);
+                }
+                eventTimes = sortedTimes;
+                eventKinds = sortedKinds;
+                eventValuesJson = sortedValues;
+            }
 
             public void SortNotes()
             {
