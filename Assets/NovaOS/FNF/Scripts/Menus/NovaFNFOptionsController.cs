@@ -13,6 +13,7 @@ namespace NovaOS.FNF
     {
         public NovaFNFGameplayController gameplay;
         public NovaFNFUdonAudioPlayer audioPlayer;
+        public NovaFNFSaveManager saveManager;
 
         [Header("Gameplay")]
         public bool downscroll;
@@ -46,12 +47,14 @@ namespace NovaOS.FNF
         {
             downscroll = value;
             ApplyGameplaySettings();
+            SaveCurrentSettings();
         }
 
         public void SetScrollSpeed(float value)
         {
             scrollSpeedMultiplier = Mathf.Clamp(value, 0.5f, 2f);
             ApplyGameplaySettings();
+            SaveCurrentSettings();
             if (scrollSpeedValueText != null)
                 scrollSpeedValueText.text = scrollSpeedMultiplier.ToString("F2") + "x";
         }
@@ -60,6 +63,7 @@ namespace NovaOS.FNF
         {
             inputOffsetMs = Mathf.Clamp(value, -250f, 250f);
             ApplyGameplaySettings();
+            SaveCurrentSettings();
             if (offsetValueText != null)
                 offsetValueText.text = inputOffsetMs.ToString("F0") + " ms";
         }
@@ -68,35 +72,60 @@ namespace NovaOS.FNF
         {
             ghostTapping = value;
             ApplyGameplaySettings();
+            SaveCurrentSettings();
         }
 
-        public void SetCameraZooms(bool value) { cameraZooms = value; }
-        public void SetFlashingLights(bool value) { flashingLights = value; }
-        public void SetSubtitles(bool value) { subtitles = value; }
-        public void SetReducedMotion(bool value) { reducedMotion = value; }
+        public void SetCameraZooms(bool value)
+        {
+            cameraZooms = value;
+            ApplyPresentationSettings();
+            SaveCurrentSettings();
+        }
+
+        public void SetFlashingLights(bool value)
+        {
+            flashingLights = value;
+            SaveCurrentSettings();
+        }
+
+        public void SetSubtitles(bool value)
+        {
+            subtitles = value;
+            SaveCurrentSettings();
+        }
+
+        public void SetReducedMotion(bool value)
+        {
+            reducedMotion = value;
+            ApplyPresentationSettings();
+        }
 
         public void SetInstrumentalVolume(float value)
         {
             instrumentalVolume = Mathf.Clamp01(value);
             ApplyAudioSettings();
+            SaveCurrentSettings();
         }
 
         public void SetVocalsVolume(float value)
         {
             vocalsVolume = Mathf.Clamp01(value);
             ApplyAudioSettings();
+            SaveCurrentSettings();
         }
 
         public void SetMenuMusicVolume(float value)
         {
             menuMusicVolume = Mathf.Clamp01(value);
             ApplyAudioSettings();
+            SaveCurrentSettings();
         }
 
         public void SetSoundEffectVolume(float value)
         {
             soundEffectVolume = Mathf.Clamp01(value);
             ApplyAudioSettings();
+            SaveCurrentSettings();
         }
 
         public void ResetGameplayDefaults()
@@ -106,6 +135,7 @@ namespace NovaOS.FNF
             inputOffsetMs = 0f;
             ghostTapping = true;
             ApplyAll();
+            SaveCurrentSettings();
         }
 
         public void ResetAudioDefaults()
@@ -115,12 +145,27 @@ namespace NovaOS.FNF
             menuMusicVolume = 1f;
             soundEffectVolume = 1f;
             ApplyAll();
+            SaveCurrentSettings();
+        }
+
+        public void ApplySavedSettings()
+        {
+            ApplyAll();
+        }
+
+        public void SaveCurrentSettings()
+        {
+            if (saveManager == null) return;
+            saveManager.SaveGameplaySettings(downscroll, ghostTapping, scrollSpeedMultiplier,
+                inputOffsetMs, cameraZooms, flashingLights, instrumentalVolume,
+                vocalsVolume, menuMusicVolume, soundEffectVolume);
         }
 
         private void ApplyAll()
         {
             ApplyGameplaySettings();
             ApplyAudioSettings();
+            ApplyPresentationSettings();
             if (offsetValueText != null) offsetValueText.text = inputOffsetMs.ToString("F0") + " ms";
             if (scrollSpeedValueText != null) scrollSpeedValueText.text = scrollSpeedMultiplier.ToString("F2") + "x";
         }
@@ -132,6 +177,13 @@ namespace NovaOS.FNF
             gameplay.scrollSpeedMultiplier = scrollSpeedMultiplier;
             gameplay.inputOffsetMs = inputOffsetMs;
             gameplay.ghostTapping = ghostTapping;
+        }
+
+        private void ApplyPresentationSettings()
+        {
+            if (gameplay == null || gameplay.beatClock == null) return;
+            gameplay.beatClock.cameraZooms = cameraZooms;
+            gameplay.beatClock.reducedMotion = reducedMotion;
         }
 
         private void ApplyAudioSettings()
