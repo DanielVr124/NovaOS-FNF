@@ -207,6 +207,20 @@ namespace NovaOS.FNF
             PlayUiSound(moveSound);
         }
 
+        public void SelectAction(NovaFNFMenuAction action)
+        {
+            if (currentActions == null || action == null) return;
+            for (int i = 0; i < currentActions.Length; i++)
+            {
+                if (currentActions[i] == action)
+                {
+                    selectedActionIndex = i;
+                    RefreshHighlights();
+                    return;
+                }
+            }
+        }
+
         public void ConfirmSelection()
         {
             if (currentActions == null || currentActions.Length == 0) return;
