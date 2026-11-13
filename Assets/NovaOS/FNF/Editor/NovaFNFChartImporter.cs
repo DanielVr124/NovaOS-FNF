@@ -113,6 +113,8 @@ namespace NovaOS.FNF.Editor
                         record.baseBpm = baseBpm;
                         record.scrollSpeed = GetNumber(scrollSpeeds, difficultyPair.Key,
                             GetNumber(scrollSpeeds, "default", 1f));
+                        record.previewStartSeconds = GetNumber(playData, "previewStart", 0f);
+                        record.previewEndSeconds = GetNumber(playData, "previewEnd", 0f);
                         record.bpmTimes.AddRange(bpmTimes);
                         record.bpmValues.AddRange(bpmValues);
 
@@ -198,6 +200,8 @@ namespace NovaOS.FNF.Editor
             List<string> girlfriendCharacterIds = new List<string>();
             List<float> baseBpms = new List<float>();
             List<float> scrollSpeeds = new List<float>();
+            List<float> previewStarts = new List<float>();
+            List<float> previewEnds = new List<float>();
             List<int> noteStarts = new List<int>();
             List<int> noteCounts = new List<int>();
             List<int> bpmStarts = new List<int>();
@@ -228,6 +232,8 @@ namespace NovaOS.FNF.Editor
                 girlfriendCharacterIds.Add(chart.girlfriendCharacterId);
                 baseBpms.Add(chart.baseBpm);
                 scrollSpeeds.Add(chart.scrollSpeed);
+                previewStarts.Add(chart.previewStartSeconds);
+                previewEnds.Add(chart.previewEndSeconds);
 
                 noteStarts.Add(allNoteTimes.Count);
                 noteCounts.Add(chart.noteTimes.Count);
@@ -260,6 +266,8 @@ namespace NovaOS.FNF.Editor
             SetStrings(serialized, "girlfriendCharacterIds", girlfriendCharacterIds);
             SetFloats(serialized, "baseBpms", baseBpms);
             SetFloats(serialized, "scrollSpeeds", scrollSpeeds);
+            SetFloats(serialized, "previewStartSeconds", previewStarts);
+            SetFloats(serialized, "previewEndSeconds", previewEnds);
             SetInts(serialized, "noteStarts", noteStarts);
             SetInts(serialized, "noteCounts", noteCounts);
             SetInts(serialized, "bpmStarts", bpmStarts);
@@ -453,6 +461,8 @@ namespace NovaOS.FNF.Editor
             public string girlfriendCharacterId;
             public float baseBpm;
             public float scrollSpeed;
+            public float previewStartSeconds;
+            public float previewEndSeconds;
             public List<float> noteTimes = new List<float>();
             public List<int> noteDirections = new List<int>();
             public List<float> sustainLengths = new List<float>();
