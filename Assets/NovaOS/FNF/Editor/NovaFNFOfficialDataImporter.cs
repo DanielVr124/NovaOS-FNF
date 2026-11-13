@@ -15,8 +15,31 @@ namespace NovaOS.FNF.Editor
     /// This preserves the new game's data model instead of flattening it to
     /// the legacy Sparrow-only character format.
     /// </summary>
+    [InitializeOnLoad]
     public static class NovaFNFOfficialDataImporter
     {
+        private const string AutoImportSessionKey = "NovaOS.FNF.OfficialDataAutoImported";
+
+        static NovaFNFOfficialDataImporter()
+        {
+            EditorApplication.delayCall += AutoImportAfterPackageImport;
+        }
+
+        private static void AutoImportAfterPackageImport()
+        {
+            if (SessionState.GetBool(AutoImportSessionKey, false)) return;
+            SessionState.SetBool(AutoImportSessionKey, true);
+            if (!AssetDatabase.IsValidFolder(CharacterJsonRoot) ||
+                !AssetDatabase.IsValidFolder(StageJsonRoot)) return;
+
+            bool hasCharacters = AssetDatabase.IsValidFolder(CharacterOutput) &&
+                AssetDatabase.FindAssets("t:NovaFNFCharacterDefinition", new[] { CharacterOutput }).Length > 0;
+            bool hasStages = AssetDatabase.IsValidFolder(StageOutput) &&
+                AssetDatabase.FindAssets("t:NovaFNFStageDefinition", new[] { StageOutput }).Length > 0;
+            if (!hasCharacters || !hasStages)
+                ImportAllInternal(false);
+        }
+
         private const string OfficialRoot = "Assets/NovaOS/FNF/OfficialAssets";
         private const string CharacterJsonRoot = OfficialRoot + "/preload/data/characters";
         private const string StageJsonRoot = OfficialRoot + "/preload/data/stages";
