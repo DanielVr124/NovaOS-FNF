@@ -14,6 +14,7 @@ namespace NovaOS.FNF
         public string[] songIds;
         public string[] variationIds;
         public string[] difficultyIds;
+        public int[] difficultyRatings;
         public string[] songNames;
         public string[] artists;
         public string[] playerCharacterIds;
