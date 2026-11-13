@@ -1,5 +1,6 @@
 using UdonSharp;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace NovaOS.FNF
 {
@@ -11,6 +12,8 @@ namespace NovaOS.FNF
     {
         public GameObject noteVisual;
         public Transform sustainBody;
+        public Text noteLabel;
+        public Image noteImage;
 
         private Transform receptor;
         private int lane;
@@ -35,6 +38,21 @@ namespace NovaOS.FNF
                 receptor = null;
 
             if (noteVisual != null) noteVisual.SetActive(true);
+            int visualLane = laneIndex % 4;
+            if (noteLabel != null)
+            {
+                if (visualLane == 0) noteLabel.text = "←";
+                else if (visualLane == 1) noteLabel.text = "↓";
+                else if (visualLane == 2) noteLabel.text = "↑";
+                else noteLabel.text = "→";
+            }
+            if (noteImage != null)
+            {
+                if (visualLane == 0) noteImage.color = new Color(0.25f, 0.72f, 1f, 1f);
+                else if (visualLane == 1) noteImage.color = new Color(0.35f, 0.95f, 0.45f, 1f);
+                else if (visualLane == 2) noteImage.color = new Color(0.95f, 0.35f, 0.35f, 1f);
+                else noteImage.color = new Color(0.9f, 0.45f, 1f, 1f);
+            }
             if (sustainBody != null) sustainBody.gameObject.SetActive(sustainLengthMs > 0f);
         }
 
