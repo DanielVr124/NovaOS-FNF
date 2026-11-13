@@ -28,7 +28,6 @@ namespace NovaOS.FNF.Editor
         private static void AutoImportAfterPackageImport()
         {
             if (SessionState.GetBool(AutoImportSessionKey, false)) return;
-            SessionState.SetBool(AutoImportSessionKey, true);
             if (!AssetDatabase.IsValidFolder(CharacterJsonRoot) ||
                 !AssetDatabase.IsValidFolder(StageJsonRoot)) return;
 
@@ -36,8 +35,27 @@ namespace NovaOS.FNF.Editor
                 AssetDatabase.FindAssets("t:NovaFNFCharacterDefinition", new[] { CharacterOutput }).Length > 0;
             bool hasStages = AssetDatabase.IsValidFolder(StageOutput) &&
                 AssetDatabase.FindAssets("t:NovaFNFStageDefinition", new[] { StageOutput }).Length > 0;
-            if (!hasCharacters || !hasStages)
+            if (hasCharacters && hasStages)
+            {
+                SessionState.SetBool(AutoImportSessionKey, true);
+                return;
+            }
+
+            try
+            {
                 ImportAllInternal(false);
+                hasCharacters = AssetDatabase.IsValidFolder(CharacterOutput) &&
+                    AssetDatabase.FindAssets("t:NovaFNFCharacterDefinition", new[] { CharacterOutput }).Length > 0;
+                hasStages = AssetDatabase.IsValidFolder(StageOutput) &&
+                    AssetDatabase.FindAssets("t:NovaFNFStageDefinition", new[] { StageOutput }).Length > 0;
+                if (hasCharacters && hasStages)
+                    SessionState.SetBool(AutoImportSessionKey, true);
+            }
+            catch (Exception exception)
+            {
+                // Do not suppress a later retry if imported data was not ready yet.
+                Debug.LogError("NovaOS automatic official-data import failed: " + exception);
+            }
         }
 
         private const string OfficialRoot = "Assets/NovaOS/FNF/OfficialAssets";
