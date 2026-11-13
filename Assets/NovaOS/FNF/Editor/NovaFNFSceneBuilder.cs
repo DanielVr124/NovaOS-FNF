@@ -128,7 +128,7 @@ namespace NovaOS.FNF.Editor
             }
 
             // Main menu: source positions are centered with 160px vertical spacing.
-            string[] mainLabels = { "STORY MODE", "FREEPLAY", "OPTIONS", "CREDITS" };
+            string[] mainLabels = { "STORY MODE", "FREEPLAY", "OPTIONS" };
             var mainActions = new List<NovaFNFMenuAction>();
             for (int i = 0; i < mainLabels.Length; i++)
             {
