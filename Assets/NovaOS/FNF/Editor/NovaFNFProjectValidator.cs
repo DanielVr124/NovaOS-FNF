@@ -73,6 +73,8 @@ namespace NovaOS.FNF.Editor
                 Check(audioPlayer.audioBank != null, "Audio player references the VRChat audio bank.", errors, passed);
                 Check(audioPlayer.instrumentalSource != null, "Audio player has an instrumental AudioSource.", errors, passed);
                 Check(audioPlayer.menuMusicSource != null, "Audio player has a menu music AudioSource.", warnings, passed);
+                Check(audioPlayer.menuMusicSecondarySource != null, "Audio player has a secondary menu AudioSource for crossfades.", warnings, passed);
+                Check(audioPlayer.opponentVocalsSource != null, "Audio player has an opponent-vocals AudioSource.", warnings, passed);
                 Check(audioPlayer.previewSource != null, "Audio player has a Freeplay preview AudioSource.", warnings, passed);
                 Check(audioPlayer.soundEffectSource != null, "Audio player has a sound-effect AudioSource.", warnings, passed);
                 if (audioPlayer.audioBank != audioBank && audioBank != null)
@@ -91,6 +93,38 @@ namespace NovaOS.FNF.Editor
                 bool chartRangesValid = chartBank.noteStarts != null && chartBank.noteCounts != null &&
                     chartBank.noteStarts.Length == chartBank.noteCounts.Length;
                 Check(chartRangesValid, "Chart start/count arrays are aligned.", errors, passed);
+
+                bool chartMetadataAligned = chartBank.chartKeys != null &&
+                    chartBank.songIds != null && chartBank.variationIds != null &&
+                    chartBank.difficultyIds != null && chartBank.songNames != null &&
+                    chartBank.artists != null && chartBank.baseBpms != null &&
+                    chartBank.scrollSpeeds != null &&
+                    chartBank.chartKeys.Length == chartBank.songIds.Length &&
+                    chartBank.chartKeys.Length == chartBank.variationIds.Length &&
+                    chartBank.chartKeys.Length == chartBank.difficultyIds.Length &&
+                    chartBank.chartKeys.Length == chartBank.songNames.Length &&
+                    chartBank.chartKeys.Length == chartBank.artists.Length &&
+                    chartBank.chartKeys.Length == chartBank.baseBpms.Length &&
+                    chartBank.chartKeys.Length == chartBank.scrollSpeeds.Length;
+                Check(chartMetadataAligned,
+                    "Chart identity, metadata, BPM and scroll-speed arrays are aligned.", errors, passed);
+
+                if (chartRangesValid && noteArraysValid)
+                {
+                    bool rangesInBounds = true;
+                    for (int i = 0; i < chartBank.noteStarts.Length; i++)
+                    {
+                        int start = chartBank.noteStarts[i];
+                        int count = chartBank.noteCounts[i];
+                        if (start < 0 || count < 0 || start > chartBank.noteTimesMs.Length ||
+                            count > chartBank.noteTimesMs.Length - start)
+                        {
+                            rangesInBounds = false;
+                            errors.Add("Chart note range is outside the flattened note arrays at chart index " + i + ".");
+                        }
+                    }
+                    Check(rangesInBounds, "All chart note ranges remain inside the flattened note arrays.", errors, passed);
+                }
 
                 if (chartBank.eventStarts != null || chartBank.eventCounts != null)
                     Check(chartBank.eventStarts != null && chartBank.eventCounts != null &&
