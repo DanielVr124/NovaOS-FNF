@@ -2,7 +2,17 @@
 
 A Unity 2022.3 LTS / VRChat UdonSharp rhythm-game project. The target is a playable recreation inspired by the **newer official Friday Night Funkin'**, not the older 2020-era menu layout.
 
-This repository is the source workspace. It is **not a finished Unity package yet**. The scripts have been committed, but they still need to be imported, compiled and tested in the actual Unity/VRChat project. The repository does not contain official FNF music, art, character models, stages, or animation assets.
+This repository is the source workspace. GitHub Actions builds an importable `.unitypackage` that includes the NovaOS-FNF scripts plus a snapshot of the official FunkinCrew asset repository routed into the project's audio, chart, level, and reference-asset folders. Importing the package does **not** compile UdonSharp or prove the game works in Unity/VRChat. The generated scene and data banks still require Editor setup and validation. Official game code and official creative assets have separate licensing terms; only use or share imported content where you have permission.
+
+## Quick setup after importing the GitHub Actions package
+
+1. Import `NovaOS-FNF-UnityPackage.unitypackage` into a Unity 2022.3 project that already has the VRChat Worlds SDK and UdonSharp installed.
+2. Wait for Unity to finish importing and compiling. The Editor setup scripts attempt to generate `Assets/NovaOS/Scenes/NovaFNF_TestScene.unity` and `Assets/NovaOS/Prefabs/NovaFNF_Game.prefab`.
+3. If the scene was not generated automatically, use **NovaOS → FNF → Setup → Create Drag-and-Drop Game and Test Scene**.
+4. Open the generated test scene, then run **NovaOS → FNF → Setup → Prepare Test Scene and Import All Data**. This single setup command scans the bundled audio, populates the scene's audio bank, imports available chart metadata into its chart bank, and imports Story Mode level data.
+5. Read the Console and importer reports. Then run **NovaOS → FNF → Validation → Validate Current Scene** before pressing Play.
+
+The setup command is a convenience step, not a guarantee of compatibility. It does not compile UdonSharp, provide finished official menu artwork/animation prefabs, implement every official gameplay event, or replace PC/Quest testing. If the setup command reports errors, fix those before uploading a world.
 
 ## 1. Audio library: drop in folders and scan
 
