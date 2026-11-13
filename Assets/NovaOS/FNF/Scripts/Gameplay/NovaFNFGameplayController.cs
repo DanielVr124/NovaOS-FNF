@@ -18,6 +18,7 @@ namespace NovaOS.FNF
         public NovaFNFResultsController resultsController;
         public NovaFNFStoryProgression storyProgression;
         public NovaFNFBeatClock beatClock;
+        public NovaFNFSaveManager saveManager;
 
         [Header("Chart selection")]
         public string selectedSongId = "tutorial";
@@ -230,6 +231,7 @@ namespace NovaOS.FNF
         public void ExitToMenu()
         {
             if (audioPlayer != null) audioPlayer.StopSong();
+            if (beatClock != null) beatClock.StopClock();
             playing = false;
             paused = false;
             ClearNotes();
@@ -434,6 +436,9 @@ namespace NovaOS.FNF
             if (audioPlayer != null) audioPlayer.StopSong();
             if (beatClock != null) beatClock.StopClock();
             ClearNotes();
+            if (saveManager != null)
+                saveManager.SaveSongResult(selectedSongId + "-" + selectedVariationId, selectedDifficultyId,
+                    score, misses, accuracy, highestCombo);
             if (pausePanel != null) pausePanel.SetActive(false);
             if (storyProgression != null && storyProgression.storyRunActive)
             {
