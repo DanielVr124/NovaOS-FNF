@@ -14,6 +14,7 @@ namespace NovaOS.FNF
         public AudioSource instrumentalSource;
         public AudioSource vocalsSource;
         public AudioSource menuMusicSource;
+        public AudioSource menuMusicSecondarySource;
         public AudioSource soundEffectSource;
 
         [Header("Playback")]
@@ -21,14 +22,26 @@ namespace NovaOS.FNF
         [Range(0f, 1f)] public float vocalsVolume = 1f;
         [Range(0f, 1f)] public float menuMusicVolume = 1f;
         [Range(0f, 1f)] public float soundEffectVolume = 1f;
+        [Range(0f, 3f)] public float menuMusicFadeSeconds = 0.45f;
         [Range(0f, 0.5f)] public float vocalResyncThreshold = 0.12f;
 
         public string currentSongId = "";
         public bool songLoaded;
         public bool songPaused;
 
+        private AudioSource activeMenuSource;
+        private AudioSource incomingMenuSource;
+        private float menuFadeProgress;
+        private bool menuFadeActive;
+
+        private void Start()
+        {
+            activeMenuSource = menuMusicSource;
+        }
+
         private void Update()
         {
+            UpdateMenuMusicFade();
             if (!songLoaded || songPaused) return;
             if (instrumentalSource == null || vocalsSource == null) return;
             if (!instrumentalSource.isPlaying || !vocalsSource.isPlaying) return;
@@ -137,16 +150,65 @@ namespace NovaOS.FNF
             AudioClip clip = audioBank.menuMusicClips[index];
             if (clip == null) return;
 
-            menuMusicSource.Stop();
-            menuMusicSource.clip = clip;
-            menuMusicSource.volume = menuMusicVolume;
-            menuMusicSource.loop = true;
-            menuMusicSource.Play();
+            if (activeMenuSource == null) activeMenuSource = menuMusicSource;
+            if (activeMenuSource.clip == clip && activeMenuSource.isPlaying) return;
+
+            if (menuMusicSecondarySource == null || menuMusicFadeSeconds <= 0f)
+            {
+                menuMusicSource.Stop();
+                menuMusicSource.clip = clip;
+                menuMusicSource.volume = menuMusicVolume;
+                menuMusicSource.loop = true;
+                menuMusicSource.Play();
+                activeMenuSource = menuMusicSource;
+                return;
+            }
+
+            if (menuFadeActive && incomingMenuSource != null)
+            {
+                activeMenuSource.Stop();
+                activeMenuSource.volume = 0f;
+                activeMenuSource = incomingMenuSource;
+                incomingMenuSource = null;
+                menuFadeActive = false;
+            }
+
+            incomingMenuSource = activeMenuSource == menuMusicSource
+                ? menuMusicSecondarySource : menuMusicSource;
+            incomingMenuSource.Stop();
+            incomingMenuSource.clip = clip;
+            incomingMenuSource.loop = true;
+            incomingMenuSource.volume = 0f;
+            incomingMenuSource.Play();
+            menuFadeProgress = 0f;
+            menuFadeActive = true;
         }
 
         public void StopMenuMusic()
         {
+            menuFadeActive = false;
             if (menuMusicSource != null) menuMusicSource.Stop();
+            if (menuMusicSecondarySource != null) menuMusicSecondarySource.Stop();
+            activeMenuSource = menuMusicSource;
+            incomingMenuSource = null;
+        }
+
+        private void UpdateMenuMusicFade()
+        {
+            if (!menuFadeActive || activeMenuSource == null || incomingMenuSource == null) return;
+            menuFadeProgress += Time.deltaTime / Mathf.Max(0.01f, menuMusicFadeSeconds);
+            float blend = Mathf.Clamp01(menuFadeProgress);
+            activeMenuSource.volume = menuMusicVolume * (1f - blend);
+            incomingMenuSource.volume = menuMusicVolume * blend;
+
+            if (blend >= 1f)
+            {
+                activeMenuSource.Stop();
+                activeMenuSource.volume = 0f;
+                activeMenuSource = incomingMenuSource;
+                incomingMenuSource = null;
+                menuFadeActive = false;
+            }
         }
 
         public void PlaySoundEffect(string id)
