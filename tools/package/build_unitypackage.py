@@ -77,18 +77,13 @@ def main() -> None:
     if not official.exists():
         raise SystemExit(f"Official asset checkout not found: {official}")
 
-    # Preserve the project's existing FNF source paths, then place the official
-    # asset repository under one predictable root inside the Unity project.
+    # Preserve source code and route official data into the exact library
+    # roots consumed by the audio/chart/story importers already in this project.
     files: list[tuple[Path, str]] = []
     dirs: set[str] = {UNITY_ROOT}
-    for p in source.rglob("*"):
-        if p.is_dir():
-            continue
-        if p.name.endswith(".meta"):
-            continue
-        rel = p.relative_to(source).as_posix()
-        dest = f"{UNITY_ROOT}/{rel}"
-        files.append((p, dest))
+
+    def add_file(src: Path, dest: str) -> None:
+        files.append((src, dest))
         parent = Path(dest).parent
         while str(parent).startswith("Assets"):
             dirs.add(parent.as_posix())
@@ -96,18 +91,40 @@ def main() -> None:
                 break
             parent = parent.parent
 
-    official_root = f"{UNITY_ROOT}/OfficialAssets"
-    dirs.add(official_root)
+    for p in source.rglob("*"):
+        if p.is_dir() or p.name.endswith(".meta"):
+            continue
+        rel = p.relative_to(source).as_posix()
+        add_file(p, f"{UNITY_ROOT}/{rel}")
+
+    # Audio scanner layout: songs/<id>/Inst.ogg and Voices-<character>.ogg.
+    for p in safe_files(official / "songs") if (official / "songs").exists() else []:
+        rel = p.relative_to(official / "songs").as_posix()
+        add_file(p, f"Assets/NovaOS/AudioLibrary/songs/{rel}")
+
+    # Official menu music and sound effects are routed into scanner-recognized folders.
+    for p in safe_files(official / "preload" / "music") if (official / "preload" / "music").exists() else []:
+        add_file(p, f"Assets/NovaOS/AudioLibrary/menu/{p.relative_to(official / 'preload' / 'music').as_posix()}")
+    for p in safe_files(official / "preload" / "sounds") if (official / "preload" / "sounds").exists() else []:
+        add_file(p, f"Assets/NovaOS/AudioLibrary/soundEffects/{p.relative_to(official / 'preload' / 'sounds').as_posix()}")
+
+    # Official chart and story JSON files go where the existing importers expect them.
+    for p in safe_files(official / "preload" / "data" / "songs") if (official / "preload" / "data" / "songs").exists() else []:
+        add_file(p, f"Assets/NovaOS/ChartLibrary/songs/{p.relative_to(official / 'preload' / 'data' / 'songs').as_posix()}")
+    for p in safe_files(official / "preload" / "data" / "levels") if (official / "preload" / "data" / "levels").exists() else []:
+        add_file(p, f"Assets/NovaOS/LevelLibrary/{p.relative_to(official / 'preload' / 'data' / 'levels').as_posix()}")
+
+    # Keep remaining art, character/stage definitions, fonts and atlases intact
+    # for the character/stage integration work that follows.
+    routed = ("songs", "preload/music", "preload/sounds", "preload/data/songs", "preload/data/levels")
     for p in safe_files(official):
         rel = p.relative_to(official).as_posix()
-        dest = f"{official_root}/{rel}"
-        files.append((p, dest))
-        parent = Path(dest).parent
-        while str(parent).startswith("Assets"):
-            dirs.add(parent.as_posix())
-            if parent.as_posix() == "Assets":
-                break
-            parent = parent.parent
+        if any(rel == root or rel.startswith(root + "/") for root in routed):
+            continue
+        add_file(p, f"{UNITY_ROOT}/OfficialAssets/{rel}")
+
+    dirs.update({"Assets/NovaOS/AudioLibrary", "Assets/NovaOS/ChartLibrary",
+                 "Assets/NovaOS/LevelLibrary", f"{UNITY_ROOT}/OfficialAssets"})
 
     # Add Unity's root folders as folder assets too.
     dirs.update({"Assets", "Assets/NovaOS", UNITY_ROOT})
