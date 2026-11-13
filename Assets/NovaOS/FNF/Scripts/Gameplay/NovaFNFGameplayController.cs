@@ -71,6 +71,7 @@ namespace NovaOS.FNF
         private int judgedNotes;
         private int weightedAccuracy;
         private NovaFNFNoteView[] heldSustainNotes = new NovaFNFNoteView[4];
+        private bool[] externalLaneHeld = new bool[4];
         private float lastNoteEndMs;
         private bool failed;
 
@@ -162,6 +163,12 @@ namespace NovaOS.FNF
 
             if (nextChartNote >= chartNoteEnd && songTimeMs > lastNoteEndMs + 1800f)
                 FinishSong();
+        }
+
+        public void SetExternalLaneHeld(int lane, bool held)
+        {
+            if (lane < 0 || lane > 3) return;
+            externalLaneHeld[lane] = held;
         }
 
         public void HitLane(int lane)
@@ -387,10 +394,10 @@ namespace NovaOS.FNF
 
         private bool IsLaneHeld(int lane)
         {
-            if (lane == 0) return Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
-            if (lane == 1) return Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S);
-            if (lane == 2) return Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W);
-            if (lane == 3) return Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
+            if (lane == 0) return externalLaneHeld[0] || Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
+            if (lane == 1) return externalLaneHeld[1] || Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S);
+            if (lane == 2) return externalLaneHeld[2] || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W);
+            if (lane == 3) return externalLaneHeld[3] || Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
             return false;
         }
 
