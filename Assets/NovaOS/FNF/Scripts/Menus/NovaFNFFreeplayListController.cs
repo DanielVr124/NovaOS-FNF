@@ -5,24 +5,34 @@ using UnityEngine.UI;
 namespace NovaOS.FNF
 {
     /// <summary>
-    /// Builds a paged Freeplay list from imported chart metadata. Pre-create the
-    /// visible row/button slots in the scene; this component fills them at runtime.
+    /// Builds a paged Freeplay list from imported chart metadata. It supports
+    /// favorites, best-score display, and score sorting using the PlayerData save manager.
+    /// All row objects are pre-created in the scene for VRChat-safe runtime use.
     /// </summary>
     public class NovaFNFFreeplayListController : UdonSharpBehaviour
     {
         public NovaFNFChartBank chartBank;
         public NovaFNFMenuController menuController;
+        public NovaFNFSaveManager saveManager;
         public NovaFNFMenuAction[] songSlots;
         public Text[] songNameLabels;
         public Text[] artistLabels;
+        public Text[] bestScoreLabels;
+        public NovaFNFFavoriteButton[] favoriteButtons;
         public Text pageLabel;
+
+        [Header("Freeplay filters")]
+        public bool favoritesOnly;
+        public bool sortByHighScore;
 
         private string[] uniqueSongIds;
         private string[] uniqueSongNames;
         private string[] uniqueArtists;
         private string[] uniqueVariations;
         private string[] defaultDifficulties;
+        private int[] visibleSongIndices;
         private int songCount;
+        private int visibleSongCount;
         private int currentPage;
         private int pageCount;
 
@@ -36,6 +46,7 @@ namespace NovaOS.FNF
             if (chartBank == null || chartBank.songIds == null)
             {
                 songCount = 0;
+                visibleSongCount = 0;
                 RefreshPage();
                 return;
             }
@@ -64,12 +75,37 @@ namespace NovaOS.FNF
                 songCount++;
             }
 
-            int slotsPerPage = songSlots == null ? 0 : songSlots.Length;
-            pageCount = slotsPerPage > 0 ? Mathf.CeilToInt((float)songCount / slotsPerPage) : 0;
-            currentPage = 0;
-            if (menuController != null && songSlots != null)
-                menuController.SetFreeplayActions(songSlots);
-            RefreshPage();
+            RebuildVisibleList();
+            if (menuController != null) menuController.SetFreeplayActions(new NovaFNFMenuAction[0]);
+        }
+
+        public void ShowAllSongs()
+        {
+            favoritesOnly = false;
+            RebuildVisibleList();
+        }
+
+        public void ShowFavorites()
+        {
+            favoritesOnly = true;
+            RebuildVisibleList();
+        }
+
+        public void ToggleFavoritesOnly()
+        {
+            favoritesOnly = !favoritesOnly;
+            RebuildVisibleList();
+        }
+
+        public void ToggleHighScoreSort()
+        {
+            sortByHighScore = !sortByHighScore;
+            RebuildVisibleList();
+        }
+
+        public void RefreshFavorites()
+        {
+            RebuildVisibleList();
         }
 
         public void NextPage()
@@ -92,11 +128,14 @@ namespace NovaOS.FNF
         {
             if (songSlots == null) return;
             int start = currentPage * songSlots.Length;
+            int pageVisibleCount = Mathf.Min(songSlots.Length, Mathf.Max(0, visibleSongCount - start));
+            NovaFNFMenuAction[] pageActions = new NovaFNFMenuAction[pageVisibleCount];
 
             for (int slotIndex = 0; slotIndex < songSlots.Length; slotIndex++)
             {
-                int songIndex = start + slotIndex;
-                bool valid = songIndex < songCount;
+                int visibleIndex = start + slotIndex;
+                bool valid = visibleIndex < visibleSongCount;
+                int songIndex = valid ? visibleSongIndices[visibleIndex] : -1;
                 NovaFNFMenuAction slot = songSlots[slotIndex];
 
                 if (slot != null)
@@ -109,6 +148,7 @@ namespace NovaOS.FNF
                         slot.songId = uniqueSongIds[songIndex];
                         slot.variationId = uniqueVariations[songIndex];
                         slot.difficultyId = defaultDifficulties[songIndex];
+                        pageActions[slotIndex < pageVisibleCount ? slotIndex : 0] = slot;
                     }
                 }
 
@@ -117,10 +157,73 @@ namespace NovaOS.FNF
 
                 if (artistLabels != null && slotIndex < artistLabels.Length && artistLabels[slotIndex] != null)
                     artistLabels[slotIndex].text = valid ? uniqueArtists[songIndex] : "";
+
+                if (bestScoreLabels != null && slotIndex < bestScoreLabels.Length && bestScoreLabels[slotIndex] != null)
+                {
+                    int bestScore = valid && saveManager != null
+                        ? saveManager.GetBestScore(uniqueSongIds[songIndex] + "-" + uniqueVariations[songIndex], defaultDifficulties[songIndex])
+                        : 0;
+                    bestScoreLabels[slotIndex].text = valid ? "BEST " + bestScore : "";
+                }
+
+                if (favoriteButtons != null && slotIndex < favoriteButtons.Length && favoriteButtons[slotIndex] != null)
+                {
+                    favoriteButtons[slotIndex].freeplayList = this;
+                    favoriteButtons[slotIndex].songId = valid ? uniqueSongIds[songIndex] : "";
+                    favoriteButtons[slotIndex].Refresh();
+                }
             }
+
+            if (menuController != null)
+                menuController.SetFreeplayActions(pageActions);
 
             if (pageLabel != null)
                 pageLabel.text = pageCount == 0 ? "0 / 0" : (currentPage + 1) + " / " + pageCount;
+        }
+
+        public void ToggleFavorite(string songId)
+        {
+            if (saveManager == null || string.IsNullOrEmpty(songId)) return;
+            saveManager.SetFavorite(songId, !saveManager.IsFavorite(songId));
+            RebuildVisibleList();
+        }
+
+        private void RebuildVisibleList()
+        {
+            if (visibleSongIndices == null || visibleSongIndices.Length != songCount)
+                visibleSongIndices = new int[songCount];
+
+            visibleSongCount = 0;
+            for (int i = 0; i < songCount; i++)
+            {
+                bool include = !favoritesOnly || (saveManager != null && saveManager.IsFavorite(uniqueSongIds[i]));
+                if (include)
+                    visibleSongIndices[visibleSongCount++] = i;
+            }
+
+            if (sortByHighScore && saveManager != null)
+            {
+                for (int i = 0; i < visibleSongCount - 1; i++)
+                {
+                    for (int j = 0; j < visibleSongCount - i - 1; j++)
+                    {
+                        int left = visibleSongIndices[j];
+                        int right = visibleSongIndices[j + 1];
+                        int leftScore = saveManager.GetBestScore(uniqueSongIds[left] + "-" + uniqueVariations[left], defaultDifficulties[left]);
+                        int rightScore = saveManager.GetBestScore(uniqueSongIds[right] + "-" + uniqueVariations[right], defaultDifficulties[right]);
+                        if (rightScore > leftScore)
+                        {
+                            visibleSongIndices[j] = right;
+                            visibleSongIndices[j + 1] = left;
+                        }
+                    }
+                }
+            }
+
+            int slotsPerPage = songSlots == null ? 0 : songSlots.Length;
+            pageCount = slotsPerPage > 0 ? Mathf.CeilToInt((float)visibleSongCount / slotsPerPage) : 0;
+            currentPage = 0;
+            RefreshPage();
         }
 
         private bool HasSong(string songId)
