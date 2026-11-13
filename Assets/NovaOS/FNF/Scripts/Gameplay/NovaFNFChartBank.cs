@@ -36,6 +36,13 @@ namespace NovaOS.FNF
         public float[] bpmChangeTimesMs;
         public float[] bpmValues;
 
+        [Header("Flattened song events")]
+        public int[] eventStarts;
+        public int[] eventCounts;
+        public float[] eventTimesMs;
+        public string[] eventKinds;
+        public string[] eventValuesJson;
+
         public int FindChartIndex(string songId, string variationId, string difficultyId)
         {
             string wantedSong = NormalizeId(songId);
