@@ -44,6 +44,7 @@ namespace NovaOS.FNF
         [Header("Audio")]
         public AudioSource uiAudioSource;
         public NovaFNFUdonAudioPlayer menuAudioPlayer;
+        public NovaFNFChartBank previewChartBank;
         public string titleMusicId;
         public string mainMenuMusicId;
         public string storyModeMusicId;
@@ -127,12 +128,14 @@ namespace NovaOS.FNF
         {
             ShowScreen(freeplayScreenIndex, true);
             PlayMenuTrack(freeplayMusicId);
+            PlayCurrentFreeplayPreview();
             PlayUiSound(confirmSound);
         }
 
         public void OpenDifficultySelect()
         {
             ShowScreen(difficultySelectScreenIndex, true);
+            if (menuAudioPlayer != null) menuAudioPlayer.StopSongPreview();
             PlayUiSound(confirmSound);
             if (difficultyList != null) difficultyList.BuildForSelectedSong();
         }
@@ -271,6 +274,7 @@ namespace NovaOS.FNF
             if (selectedActionIndex < 0) selectedActionIndex = currentActions.Length - 1;
             if (selectedActionIndex >= currentActions.Length) selectedActionIndex = 0;
             RefreshHighlights();
+            PlayCurrentFreeplayPreview();
             PlayUiSound(moveSound);
         }
 
@@ -283,6 +287,7 @@ namespace NovaOS.FNF
                 {
                     selectedActionIndex = i;
                     RefreshHighlights();
+                    PlayCurrentFreeplayPreview();
                     return;
                 }
             }
@@ -394,6 +399,49 @@ namespace NovaOS.FNF
             for (int i = 0; i < currentActions.Length; i++)
                 if (currentActions[i] != null)
                     currentActions[i].SetHighlighted(i == selectedActionIndex);
+        }
+
+        private void PlayCurrentFreeplayPreview()
+        {
+            if (currentScreenIndex != freeplayScreenIndex ||
+                currentActions == null || selectedActionIndex < 0 ||
+                selectedActionIndex >= currentActions.Length)
+            {
+                if (menuAudioPlayer != null) menuAudioPlayer.StopSongPreview();
+                return;
+            }
+
+            NovaFNFMenuAction action = currentActions[selectedActionIndex];
+            if (action == null || action.actionId != 12 ||
+                string.IsNullOrEmpty(action.songId))
+            {
+                if (menuAudioPlayer != null) menuAudioPlayer.StopSongPreview();
+                return;
+            }
+
+            if (previewChartBank == null || previewChartBank.songIds == null)
+            {
+                if (menuAudioPlayer != null) menuAudioPlayer.PlaySongPreview(action.songId, 0f, 0f);
+                return;
+            }
+
+            for (int i = 0; i < previewChartBank.songIds.Length; i++)
+            {
+                if (previewChartBank.songIds[i] != action.songId) continue;
+                string variation = previewChartBank.variationIds != null && i < previewChartBank.variationIds.Length
+                    ? previewChartBank.variationIds[i] : "default";
+                if (variation != action.variationId) continue;
+
+                float start = previewChartBank.previewStartSeconds != null && i < previewChartBank.previewStartSeconds.Length
+                    ? previewChartBank.previewStartSeconds[i] : 0f;
+                float end = previewChartBank.previewEndSeconds != null && i < previewChartBank.previewEndSeconds.Length
+                    ? previewChartBank.previewEndSeconds[i] : 0f;
+                if (menuAudioPlayer != null)
+                    menuAudioPlayer.PlaySongPreview(action.songId, start, end);
+                return;
+            }
+
+            if (menuAudioPlayer != null) menuAudioPlayer.PlaySongPreview(action.songId, 0f, 0f);
         }
 
         private void PlayScreenMusic(int screenIndex)
