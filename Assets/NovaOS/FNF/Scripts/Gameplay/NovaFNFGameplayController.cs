@@ -296,7 +296,10 @@ namespace NovaOS.FNF
             countdownActive = false;
             if (countdownText != null) countdownText.text = "";
             if (countdownAudioSource != null) countdownAudioSource.Stop();
-            if (menuController != null) menuController.OpenFreeplay();
+            if (storyProgression != null && storyProgression.storyRunActive)
+                storyProgression.CancelStoryRun();
+            else if (menuController != null)
+                menuController.OpenFreeplay();
         }
 
         public void SetExternalLaneHeld(int lane, bool held)
@@ -370,6 +373,8 @@ namespace NovaOS.FNF
             paused = false;
             ClearNotes();
             if (pausePanel != null) pausePanel.SetActive(false);
+            if (storyProgression != null && storyProgression.storyRunActive)
+                storyProgression.AbandonStoryRun();
             if (menuController != null) menuController.OpenFreeplay();
         }
 
