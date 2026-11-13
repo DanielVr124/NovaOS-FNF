@@ -18,6 +18,8 @@ namespace NovaOS.FNF
         public bool dataRestored;
         public int unlockedStoryWeeks = 1;
         public int songsPlayed;
+        public NovaFNFStoryProgression storyProgression;
+        public NovaFNFOptionsController optionsController;
 
         public override void OnPlayerRestored(VRCPlayerApi player)
         {
@@ -26,6 +28,8 @@ namespace NovaOS.FNF
             unlockedStoryWeeks = PlayerData.GetInt(player, StoryUnlockKey);
             if (unlockedStoryWeeks < 1) unlockedStoryWeeks = 1;
             songsPlayed = PlayerData.GetInt(player, SongsPlayedKey);
+            if (storyProgression != null) storyProgression.RestoreUnlockCount(unlockedStoryWeeks);
+            if (optionsController != null) LoadGameplaySettings(optionsController);
         }
 
         public bool SaveSongResult(string songId, string difficultyId, int score, int misses, float accuracy, int maxCombo)
@@ -138,9 +142,16 @@ namespace NovaOS.FNF
             VRCPlayerApi local = Networking.LocalPlayer;
             if (!dataRestored || local == null || target == null) return;
 
+            string speedKey = Prefix + "Settings.ScrollSpeed";
+            if (!PlayerData.HasKey(local, speedKey))
+            {
+                target.ApplySavedSettings();
+                return;
+            }
+
             target.downscroll = PlayerData.GetBool(local, Prefix + "Settings.Downscroll");
             target.ghostTapping = PlayerData.GetBool(local, Prefix + "Settings.GhostTapping");
-            target.scrollSpeedMultiplier = Mathf.Clamp(PlayerData.GetFloat(local, Prefix + "Settings.ScrollSpeed"), 0.5f, 2f);
+            target.scrollSpeedMultiplier = Mathf.Clamp(PlayerData.GetFloat(local, speedKey), 0.5f, 2f);
             target.inputOffsetMs = Mathf.Clamp(PlayerData.GetFloat(local, Prefix + "Settings.InputOffsetMs"), -250f, 250f);
             target.cameraZooms = PlayerData.GetBool(local, Prefix + "Settings.CameraZooms");
             target.flashingLights = PlayerData.GetBool(local, Prefix + "Settings.FlashingLights");
@@ -148,16 +159,6 @@ namespace NovaOS.FNF
             target.vocalsVolume = PlayerData.GetFloat(local, Prefix + "Settings.VocalsVolume");
             target.menuMusicVolume = PlayerData.GetFloat(local, Prefix + "Settings.MenuVolume");
             target.soundEffectVolume = PlayerData.GetFloat(local, Prefix + "Settings.SFXVolume");
-
-            if (PlayerData.GetFloat(local, Prefix + "Settings.ScrollSpeed") == 0f)
-            {
-                target.scrollSpeedMultiplier = 1f;
-                target.instrumentalVolume = 1f;
-                target.vocalsVolume = 1f;
-                target.menuMusicVolume = 1f;
-                target.soundEffectVolume = 1f;
-            }
-
             target.ApplySavedSettings();
         }
 
