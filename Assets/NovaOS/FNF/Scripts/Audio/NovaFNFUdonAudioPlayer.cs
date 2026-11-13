@@ -138,7 +138,9 @@ namespace NovaOS.FNF
 
         public bool IsSongSourcePlaying()
         {
-            return instrumentalSource != null && instrumentalSource.isPlaying;
+            bool instrumentalPlaying = instrumentalSource != null && instrumentalSource.isPlaying;
+            bool vocalsPlaying = vocalsSource != null && vocalsSource.isPlaying;
+            return instrumentalPlaying || vocalsPlaying;
         }
 
         public float GetSongLengthSeconds()
