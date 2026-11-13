@@ -87,7 +87,7 @@ namespace NovaOS.FNF.Editor
                 }
             }
 
-            levels = levels.OrderBy(level => level.id, StringComparer.OrdinalIgnoreCase).ToList();
+            levels.Sort(CompareLevelRecords);
             if (levels.Count == 0)
             {
                 EditorUtility.DisplayDialog("NovaOS Story Importer", "No valid story levels were found.\nWarnings: " + warnings.Count, "OK");
@@ -155,6 +155,53 @@ namespace NovaOS.FNF.Editor
             Debug.Log("NovaOS Story Mode import completed.\n" + report +
                 (warnings.Count > 0 ? "\n\n" + string.Join("\n", warnings) : ""), progression);
             EditorUtility.DisplayDialog("NovaOS Story Importer", report, "Done");
+        }
+
+        private static int CompareLevelRecords(LevelRecord left, LevelRecord right)
+        {
+            return CompareNatural(left.id, right.id);
+        }
+
+        private static int CompareNatural(string left, string right)
+        {
+            int i = 0;
+            int j = 0;
+            while (i < left.Length && j < right.Length)
+            {
+                bool leftDigit = char.IsDigit(left[i]);
+                bool rightDigit = char.IsDigit(right[j]);
+                if (leftDigit && rightDigit)
+                {
+                    int leftStart = i;
+                    int rightStart = j;
+                    while (i < left.Length && char.IsDigit(left[i])) i++;
+                    while (j < right.Length && char.IsDigit(right[j])) j++;
+
+                    int leftSignificant = leftStart;
+                    int rightSignificant = rightStart;
+                    while (leftSignificant < i - 1 && left[leftSignificant] == '0') leftSignificant++;
+                    while (rightSignificant < j - 1 && right[rightSignificant] == '0') rightSignificant++;
+
+                    int leftDigits = i - leftSignificant;
+                    int rightDigits = j - rightSignificant;
+                    if (leftDigits != rightDigits) return leftDigits.CompareTo(rightDigits);
+
+                    for (int k = 0; k < leftDigits; k++)
+                    {
+                        int digitCompare = left[leftSignificant + k].CompareTo(right[rightSignificant + k]);
+                        if (digitCompare != 0) return digitCompare;
+                    }
+                }
+                else
+                {
+                    int charCompare = char.ToLowerInvariant(left[i]).CompareTo(char.ToLowerInvariant(right[j]));
+                    if (charCompare != 0) return charCompare;
+                    i++;
+                    j++;
+                }
+            }
+
+            return (left.Length - i).CompareTo(right.Length - j);
         }
 
         private static void FindDefaultChart(NovaFNFChartBank bank, string songId, out string variation, out string difficulty)
