@@ -51,12 +51,15 @@ namespace NovaOS.FNF
         public float sickWindowMs = 45f;
         public float goodWindowMs = 90f;
         public float badWindowMs = 135f;
+        public float shitWindowMs = 160f;
         public float missWindowMs = 160f;
+        public NovaFNFJudgementPopup judgementPopup;
 
         [Header("Scoring")]
         public int sickScore = 350;
         public int goodScore = 200;
-        public int badScore = 50;
+        public int badScore = 100;
+        public int shitScore = 50;
         public float hitHealthGain = 0.025f;
         public float missHealthLoss = 0.10f;
 
@@ -324,7 +327,8 @@ namespace NovaOS.FNF
 
                 float difference = songTimeMs - note.GetTimeMs();
                 float absolute = Mathf.Abs(difference);
-                if (absolute <= badWindowMs && absolute < bestDifference)
+                float maximumHitWindow = Mathf.Min(shitWindowMs, missWindowMs);
+                if (absolute <= maximumHitWindow && absolute < bestDifference)
                 {
                     bestDifference = absolute;
                     bestNote = note;
@@ -475,6 +479,7 @@ namespace NovaOS.FNF
                 combo++;
                 if (combo > highestCombo) highestCombo = combo;
                 health += hitHealthGain;
+                if (judgementPopup != null) judgementPopup.ShowSick();
             }
             else if (absoluteDifference <= goodWindowMs)
             {
@@ -483,13 +488,23 @@ namespace NovaOS.FNF
                 combo++;
                 if (combo > highestCombo) highestCombo = combo;
                 health += hitHealthGain * 0.75f;
+                if (judgementPopup != null) judgementPopup.ShowGood();
             }
-            else
+            else if (absoluteDifference <= badWindowMs)
             {
                 score += badScore;
                 weightedAccuracy += 50;
                 combo = 0;
                 health += hitHealthGain * 0.35f;
+                if (judgementPopup != null) judgementPopup.ShowBad();
+            }
+            else
+            {
+                score += shitScore;
+                weightedAccuracy += 25;
+                combo = 0;
+                health += hitHealthGain * 0.1f;
+                if (judgementPopup != null) judgementPopup.ShowShit();
             }
 
             ClampHealth();
@@ -516,6 +531,7 @@ namespace NovaOS.FNF
             misses++;
             judgedNotes++;
             combo = 0;
+            if (judgementPopup != null) judgementPopup.ShowMiss();
             health -= missHealthLoss;
             ClampHealth();
             RefreshUI();
