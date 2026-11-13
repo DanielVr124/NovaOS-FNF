@@ -7,7 +7,7 @@ namespace NovaOS.FNF
     /// <summary>
     /// Session-level gameplay and accessibility settings.
     /// UI Toggle/Slider callbacks can be connected directly to the public methods.
-    /// Persistence will be layered on top after PlayerData integration is tested.
+    /// Settings are persisted through the linked VRChat PlayerData save manager.
     /// </summary>
     public class NovaFNFOptionsController : UdonSharpBehaviour
     {
@@ -163,7 +163,7 @@ namespace NovaOS.FNF
         {
             if (saveManager == null) return;
             saveManager.SaveGameplaySettings(downscroll, ghostTapping, scrollSpeedMultiplier,
-                inputOffsetMs, cameraZooms, flashingLights, instrumentalVolume,
+                inputOffsetMs, cameraZooms, flashingLights, subtitles, reducedMotion, instrumentalVolume,
                 vocalsVolume, menuMusicVolume, soundEffectVolume);
         }
 
