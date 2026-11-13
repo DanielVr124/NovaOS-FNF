@@ -39,8 +39,10 @@ namespace NovaOS.FNF
         public AudioClip cancelSound;
 
         [Header("Gameplay handoff")]
-        public NovaFNFUdonAudioPlayer audioPlayer;
+        public NovaFNFGameplayController gameplayController;
         public string selectedSongId = "";
+        public string selectedVariationId = "default";
+        public string selectedDifficultyId = "normal";
 
         private int currentScreenIndex = -1;
         private int[] screenHistory = new int[16];
@@ -57,7 +59,10 @@ namespace NovaOS.FNF
         {
             if (Input.GetKeyDown(KeyCode.Escape))
             {
-                GoBack();
+                if (currentScreenIndex == gameplayScreenIndex && gameplayController != null)
+                    gameplayController.PauseGame();
+                else
+                    GoBack();
                 return;
             }
 
@@ -68,7 +73,12 @@ namespace NovaOS.FNF
                 MoveSelection(1);
 
             if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space))
-                ConfirmSelection();
+            {
+                if (currentScreenIndex == titleScreenIndex)
+                    OpenMainMenu();
+                else if (currentScreenIndex != gameplayScreenIndex)
+                    ConfirmSelection();
+            }
         }
 
         public void OpenTitle()
@@ -120,9 +130,15 @@ namespace NovaOS.FNF
 
         public void StartSelectedSong()
         {
-            if (audioPlayer != null && !string.IsNullOrEmpty(selectedSongId))
-                audioPlayer.PlaySong(selectedSongId);
+            if (gameplayController == null || string.IsNullOrEmpty(selectedSongId))
+            {
+                Debug.LogWarning("Choose a song and assign NovaFNFGameplayController before starting gameplay.");
+                return;
+            }
+
+            gameplayController.SetSongSelection(selectedSongId, selectedVariationId, selectedDifficultyId);
             ShowScreen(gameplayScreenIndex, true);
+            gameplayController.StartSong();
             PlayUiSound(confirmSound);
         }
 
@@ -134,6 +150,16 @@ namespace NovaOS.FNF
         public void SetSelectedSong(string songId)
         {
             selectedSongId = songId;
+        }
+
+        public void SetSelectedVariation(string variationId)
+        {
+            selectedVariationId = variationId;
+        }
+
+        public void SetSelectedDifficulty(string difficultyId)
+        {
+            selectedDifficultyId = difficultyId;
         }
 
         public void GoBack()
