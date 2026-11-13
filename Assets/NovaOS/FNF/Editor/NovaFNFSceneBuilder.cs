@@ -354,6 +354,7 @@ namespace NovaOS.FNF.Editor
             menu.menuAudioPlayer = audioPlayer;
             menu.previewChartBank = chartBank;
             menu.difficultyList = difficultyList;
+            menu.freeplayList = freeplayList;
             menu.gameplayController = game;
             menu.inputBindings = input;
             menu.storyProgression = story;
