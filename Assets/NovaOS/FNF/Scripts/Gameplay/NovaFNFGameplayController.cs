@@ -17,6 +17,7 @@ namespace NovaOS.FNF
         public NovaFNFMenuController menuController;
         public NovaFNFResultsController resultsController;
         public NovaFNFStoryProgression storyProgression;
+        public NovaFNFBeatClock beatClock;
 
         [Header("Chart selection")]
         public string selectedSongId = "tutorial";
@@ -139,6 +140,7 @@ namespace NovaOS.FNF
             playing = audioPlayer.PlaySong(selectedSongId);
             paused = false;
             if (!playing) return;
+            if (beatClock != null) beatClock.StartClock(chartIndex);
             if (pausePanel != null) pausePanel.SetActive(false);
             RefreshUI();
         }
@@ -221,6 +223,7 @@ namespace NovaOS.FNF
         public void RestartSong()
         {
             if (audioPlayer != null) audioPlayer.StopSong();
+            if (beatClock != null) beatClock.StopClock();
             StartSong();
         }
 
@@ -429,6 +432,7 @@ namespace NovaOS.FNF
             playing = false;
             paused = false;
             if (audioPlayer != null) audioPlayer.StopSong();
+            if (beatClock != null) beatClock.StopClock();
             ClearNotes();
             if (pausePanel != null) pausePanel.SetActive(false);
             if (storyProgression != null && storyProgression.storyRunActive)
